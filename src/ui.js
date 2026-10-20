@@ -1,0 +1,15 @@
+import { colors } from './theme';
+
+// Status text -> pill colors
+export function statusStyle(text) {
+  const t = String(text).toLowerCase();
+  if (/activ|pagad|complet|recib|dispon|entregad/.test(t)) return { bg: '#14532d', fg: '#4ade80' };
+  if (/pend|por |proceso/.test(t)) return { bg: '#713f12', fg: '#fbbf24' };
+  if (/anul|inactiv|cancel|rechaz/.test(t)) return { bg: '#7f1d1d', fg: '#f87171' };
+  return { bg: colors.border, fg: colors.muted };
+}
+
+export const money = (n) => '$' + Number(n || 0).toFixed(2);
+
+export const initials = (name) =>
+  String(name || '?').replace('@', '').split(/[\s_]+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
