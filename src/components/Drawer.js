@@ -11,7 +11,7 @@ export default function Drawer({ user, visible, current, onSelect, onClose, onLo
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={s.overlay}>
         <View style={s.panel}>
-          <Image source={require('../../assets/logo.png')} style={s.logo} resizeMode="contain" />
+          <Image source={require('../../assets/logo-clean.png')} style={s.logo} resizeMode="contain" />
           <View style={s.userBox}>
             <View style={s.avatar}><Text style={s.avatarText}>{initials(user?.nombre_usuario)}</Text></View>
             <View style={{ flex: 1 }}>
@@ -54,7 +54,7 @@ export default function Drawer({ user, visible, current, onSelect, onClose, onLo
 const s = StyleSheet.create({
   overlay: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.5)' },
   panel: { width: 270, backgroundColor: '#000', paddingTop: 50, paddingHorizontal: 12 },
-  logo: { width: 80, height: 46, marginBottom: 10, marginLeft: 8 },
+  logo: { width: 79, height: 46, marginBottom: 10, marginLeft: 8 },
   userBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, padding: 10, marginBottom: 10 },
   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.red, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   avatarText: { color: '#fff', fontWeight: '800' },

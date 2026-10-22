@@ -8,7 +8,7 @@ export default function Header({ user, tasas, cartCount, onMenu, onCart, onUser 
      <View style={s.inner}>
       <View style={s.row}>
         <TouchableOpacity onPress={onMenu} hitSlop={10}><Text style={s.burger}>☰</Text></TouchableOpacity>
-        <Image source={require('../../assets/logo.png')} style={s.logo} resizeMode="contain" />
+        <Image source={require('../../assets/logo-clean.png')} style={s.logo} resizeMode="contain" />
         <View style={s.right}>
           <TouchableOpacity onPress={onCart} style={s.cart}>
             <Text style={s.cartIcon}>🛒</Text>
@@ -32,7 +32,7 @@ const s = StyleSheet.create({
   inner: { width: '100%', maxWidth: 1000, alignSelf: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   burger: { color: colors.text, fontSize: 24 },
-  logo: { width: 64, height: 36 },
+  logo: { width: 62, height: 36 },
   right: { flexDirection: 'row', alignItems: 'center' },
   cart: { marginRight: 14 },
   cartIcon: { fontSize: 20 },

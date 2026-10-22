@@ -84,7 +84,7 @@ export default function LoginScreen({ onLogin }) {
 
   const formView = (
     <Animated.View style={{ opacity: fade }}>
-      <Image source={require('../../assets/logo.png')} style={s.logo} resizeMode="contain" />
+      <Image source={require('../../assets/logo-clean.png')} style={s.logo} resizeMode="contain" />
       <Text style={s.title}>{m.title}</Text>
       <Text style={s.sub}>{m.sub}</Text>
 
@@ -166,7 +166,7 @@ const s = StyleSheet.create({
   caption: { color: '#fff', fontWeight: '700', fontSize: 16, textAlign: 'center', marginTop: 8, maxWidth: 280 },
   formWide: { flexGrow: 1, justifyContent: 'center', padding: 40 },
   formNarrow: { padding: 22 },
-  logo: { height: 54, width: '100%', marginBottom: 6 },
+  logo: { width: 140, height: 82, alignSelf: 'center', marginBottom: 10 },
   title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' },
   sub: { color: colors.muted, fontSize: 12, textAlign: 'center', marginBottom: 20 },
   field: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, marginBottom: 12 },
