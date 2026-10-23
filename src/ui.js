@@ -13,3 +13,11 @@ export const money = (n) => '$' + Number(n || 0).toFixed(2);
 
 export const initials = (name) =>
   String(name || '?').replace('@', '').split(/[\s_]+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+
+// Helpers to show any record of the system as a card (used by RecordCard / RecordTable)
+const HIDDEN = /pass|img|avatar|foto|token/i;
+export const entriesOf = (row) =>
+  Object.entries(row).filter(([k, v]) => !HIDDEN.test(k) && v !== null && v !== '' && typeof v !== 'object');
+export const findEntry = (entries, re) => entries.find(([k]) => re.test(k));
+export const fieldLabel = (k) => k.replace(/_/g, ' ');
+export const statusOf = (row) => findEntry(entriesOf(row), /estado/)?.[1];
