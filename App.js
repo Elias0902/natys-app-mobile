@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert, SafeAreaView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import LoginScreen from './src/screens/LoginScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
 import EcommerceScreen from './src/screens/EcommerceScreen';
 import CartScreen from './src/screens/CartScreen';
 import ListScreen from './src/screens/ListScreen';
@@ -20,7 +19,7 @@ const byKey = (k) => FLAT.find((i) => i.key === k);
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [screen, setScreen] = useState(byKey('dashboard'));
+  const [screen, setScreen] = useState(byKey('ecommerce'));
   const [menuOpen, setMenuOpen] = useState(false);
   const [cart, setCart] = useState({});
   const [tasas, setTasas] = useState([]);
@@ -33,8 +32,8 @@ export default function App() {
     const d = new Date(), p2 = (n) => String(n).padStart(2, '0');
     const h = d.getHours() % 12 || 12;
     setLastAccess(`${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(h)}:${p2(d.getMinutes())}:${p2(d.getSeconds())} ${d.getHours() >= 12 ? 'PM' : 'AM'}`);
-    // Same landing as the web system: role "Usuario" -> Ecommerce, everyone else -> Dashboard
-    setScreen(byKey(user.rol_usuario === 'Usuario' ? 'ecommerce' : 'dashboard'));
+    // Dashboard was removed from the mobile app: every role lands on Ecommerce
+    setScreen(byKey('ecommerce'));
     getList('tasa')
       .then((l) => setTasas(l.filter((t) => t.nombre && t.valor)))
       .catch(() => setTasas([]));
@@ -68,8 +67,7 @@ export default function App() {
   }
 
   let content;
-  if (screen.key === 'dashboard') content = <DashboardScreen user={user} />;
-  else if (screen.key === 'ecommerce') content = <EcommerceScreen cart={cart} onAdd={(p) => change(p, 1)} />;
+  if (screen.key === 'ecommerce') content = <EcommerceScreen cart={cart} onAdd={(p) => change(p, 1)} />;
   else if (screen.key === 'carrito')
     content = <CartScreen cart={cart} onChange={change} onCheckout={checkout} onShop={() => setScreen(byKey('ecommerce'))} />;
   else if (screen.key === 'perfil') content = <ProfileScreen user={user} lastAccess={lastAccess} initialTab={screen.tab} />;

@@ -1,6 +1,6 @@
 # natys-app-mobile
 
-Natys mobile app (React Native + Expo). Client for the **natys-larence** system: login, sign up, password reset, dashboard, ecommerce with cart and one view per module of the system menu.
+Natys mobile app (React Native + Expo). Client for the **natys-larence** system: login, sign up, password reset, ecommerce with cart and the modules approved for mobile (Proveedores, Comercial, Finanzas, Notificaciones, Ayuda, Perfil).
 
 ## Run
 
@@ -26,7 +26,7 @@ On Windows you can also double-click `iniciar.bat` (or `iniciar-web.bat`).
 App.js            navigation state, cart, layout
 src/api.js        login / signup / reset / generic list calls (+ mock mode)
 src/menu.js       sidebar structure (same as the web system)
-src/screens/      Login, Dashboard, Ecommerce, Cart, Profile, List, Info
+src/screens/      Login, Ecommerce, Cart, Profile, List, Info
 src/components/   Header, Drawer, UserMenu, LoginIllustration
 php/              endpoints to add to natys-larence
 ```

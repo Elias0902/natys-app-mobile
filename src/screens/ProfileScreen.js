@@ -7,7 +7,6 @@ const TABS = [
   { key: 'perfil', label: 'Mi Perfil' },
   { key: 'datos', label: 'Datos Personales' },
   { key: 'credito', label: 'Crédito y Balance' },
-  { key: 'seguridad', label: 'Seguridad' },
   { key: 'ayuda', label: 'Ayuda' },
 ];
 
