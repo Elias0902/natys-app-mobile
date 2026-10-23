@@ -38,7 +38,7 @@ export default function UserMenu({ visible, onClose, onTab, onLogout, onSoon }) 
 
 const s = StyleSheet.create({
   overlay: { flex: 1 },
-  wrap: { width: '100%', maxWidth: 1000, alignSelf: 'center', alignItems: 'flex-end', paddingTop: 72, paddingHorizontal: 10 },
+  wrap: { width: '100%', alignItems: 'flex-end', paddingTop: 72, paddingHorizontal: 10 },
   menu: { width: 220, backgroundColor: '#0f1424', borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 6 },
   item: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 14 },
   icon: { width: 24, fontSize: 14 },

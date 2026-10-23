@@ -29,7 +29,7 @@ export default function Header({ user, tasas, cartCount, onMenu, onCart, onUser 
 
 const s = StyleSheet.create({
   wrap: { backgroundColor: '#000', paddingTop: 36, paddingBottom: 10, paddingHorizontal: 14 },
-  inner: { width: '100%', maxWidth: 1000, alignSelf: 'center' },
+  inner: { width: '100%' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   burger: { color: colors.text, fontSize: 24 },
   logo: { width: 62, height: 36 },
