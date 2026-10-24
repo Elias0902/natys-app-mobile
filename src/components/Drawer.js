@@ -1,12 +1,10 @@
-import { useState } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, Modal, Pressable, StyleSheet } from 'react-native';
-import { MENU } from '../menu';
+import { View, Text, Image, ScrollView, Modal, Pressable, StyleSheet, Platform } from 'react-native';
 import { colors } from '../theme';
 import { initials } from '../ui';
+import MenuList from './MenuList';
 
+// Side menu for phones and tablets (on desktop the Sidebar is always visible instead)
 export default function Drawer({ user, visible, current, onSelect, onClose, onLogout }) {
-  const [open, setOpen] = useState({});
-
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={s.overlay}>
@@ -20,29 +18,8 @@ export default function Drawer({ user, visible, current, onSelect, onClose, onLo
               <Text style={s.userRole}>{user?.rol_usuario}</Text>
             </View>
           </View>
-          <ScrollView>
-            {MENU.map((m) =>
-              m.children ? (
-                <View key={m.label}>
-                  <TouchableOpacity style={s.row} onPress={() => setOpen((p) => ({ ...p, [m.label]: !p[m.label] }))}>
-                    <Text style={s.group}>{m.label}</Text>
-                    <Text style={s.group}>{open[m.label] ? '–' : '+'}</Text>
-                  </TouchableOpacity>
-                  {open[m.label] && m.children.map((c) => (
-                    <TouchableOpacity key={c.key} style={s.sub} onPress={() => onSelect(c)}>
-                      <Text style={[s.item, current === c.key && s.active]}>· {c.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              ) : (
-                <TouchableOpacity key={m.key} style={s.row} onPress={() => onSelect(m)}>
-                  <Text style={[s.item, current === m.key && s.active]}>{m.label}</Text>
-                </TouchableOpacity>
-              )
-            )}
-            <TouchableOpacity style={s.row} onPress={onLogout}>
-              <Text style={[s.item, { color: colors.red }]}>Cerrar sesión</Text>
-            </TouchableOpacity>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <MenuList current={current} onSelect={onSelect} onLogout={onLogout} />
           </ScrollView>
         </View>
         <Pressable style={{ flex: 1 }} onPress={onClose} />
@@ -52,18 +29,13 @@ export default function Drawer({ user, visible, current, onSelect, onClose, onLo
 }
 
 const s = StyleSheet.create({
-  overlay: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.5)' },
-  panel: { width: 270, backgroundColor: '#000', paddingTop: 50, paddingHorizontal: 12 },
-  logo: { width: 79, height: 46, marginBottom: 10, marginLeft: 8 },
-  userBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, padding: 10, marginBottom: 10 },
+  overlay: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.55)' },
+  panel: { width: 280, maxWidth: '85%', backgroundColor: colors.sidebar, paddingTop: Platform.OS === 'web' ? 18 : 50, paddingHorizontal: 12, paddingBottom: 12, borderRightColor: colors.border, borderRightWidth: 1 },
+  logo: { width: 79, height: 46, marginBottom: 12, marginLeft: 8 },
+  userBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, padding: 10, marginBottom: 12 },
   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.red, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   avatarText: { color: '#fff', fontWeight: '800' },
   userName: { color: colors.text, fontWeight: '700' },
   userMail: { color: colors.muted, fontSize: 11 },
   userRole: { color: colors.red, fontSize: 11, fontWeight: '700' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 8 },
-  sub: { paddingVertical: 9, paddingLeft: 24 },
-  group: { color: colors.text, fontWeight: '700' },
-  item: { color: colors.muted },
-  active: { color: colors.red, fontWeight: '700' },
 });

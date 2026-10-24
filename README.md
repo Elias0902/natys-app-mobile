@@ -23,10 +23,19 @@ On Windows you can also double-click `iniciar.bat` (or `iniciar-web.bat`).
 ## Structure
 
 ```
-App.js            navigation state, cart, layout
+App.js            navigation state, cart, layout (sidebar on desktop, drawer on phones)
 src/api.js        login / signup / reset / generic list calls (+ mock mode)
 src/menu.js       sidebar structure (same as the web system)
+src/layout.js     breakpoints (phone < 768 < tablet < 1024 < desktop) and max content width
 src/screens/      Login, Ecommerce, Cart, Profile, List, Info
-src/components/   Header, Drawer, UserMenu, LoginIllustration
+src/components/   Header, Sidebar, Drawer, MenuList, Page (screen + title), Icon,
+                  RecordTable / RecordRow (desktop), RecordCard (phone), Pagination...
 php/              endpoints to add to natys-larence
 ```
+
+## Responsive
+
+- **Desktop (≥ 1024px):** fixed sidebar, one-row header, records in a table with the actions aligned on the right.
+- **Tablet (768–1023px):** drawer menu, compact table (icon buttons).
+- **Phone (< 768px):** drawer menu, one card per record (ID on top, label · value rows, actions at the bottom).
+- The content of every screen is centered and never wider than 1280px (`CONTENT_MAX_WIDTH` in `src/layout.js`).

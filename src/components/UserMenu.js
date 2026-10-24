@@ -11,12 +11,13 @@ const ITEMS = [
   { icon: '⎋', label: 'Cerrar Sesión', logout: true },
 ];
 
-// Dropdown opened from the avatar (same options as the web system)
-export default function UserMenu({ visible, onClose, onTab, onLogout, onSoon }) {
+// Dropdown opened from the avatar (same options as the web system).
+// `top` = height of the header, so the menu opens right under it.
+export default function UserMenu({ visible, top = 72, onClose, onTab, onLogout, onSoon }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={s.overlay} onPress={onClose}>
-        <View style={s.wrap}>
+        <View style={[s.wrap, { paddingTop: top + 4 }]}>
           <View style={s.menu}>
             {ITEMS.map((it, i) =>
               it.sep ? (
@@ -38,8 +39,8 @@ export default function UserMenu({ visible, onClose, onTab, onLogout, onSoon }) 
 
 const s = StyleSheet.create({
   overlay: { flex: 1 },
-  wrap: { width: '100%', alignItems: 'flex-end', paddingTop: 72, paddingHorizontal: 10 },
-  menu: { width: 220, backgroundColor: '#0f1424', borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 6 },
+  wrap: { width: '100%', alignItems: 'flex-end', paddingHorizontal: 12 },
+  menu: { width: 230, backgroundColor: '#0f1424', borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 6 },
   item: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 14 },
   icon: { width: 24, fontSize: 14 },
   label: { color: colors.text, fontWeight: '600', fontSize: 13 },

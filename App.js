@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, StyleSheet, Alert, SafeAreaView } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, Alert, SafeAreaView, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import LoginScreen from './src/screens/LoginScreen';
 import EcommerceScreen from './src/screens/EcommerceScreen';
@@ -9,22 +9,30 @@ import InfoScreen from './src/screens/InfoScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import UserMenu from './src/components/UserMenu';
 import Drawer from './src/components/Drawer';
+import Sidebar from './src/components/Sidebar';
 import Header from './src/components/Header';
 import { FLAT } from './src/menu';
 import { getList } from './src/api';
 import { colors } from './src/theme';
+import { LayoutContext, computeLayout } from './src/layout';
 
-const CART = { key: 'carrito', label: 'Carrito' };
+const CART = { key: 'carrito', label: 'Carrito', icon: 'cart' };
 const byKey = (k) => FLAT.find((i) => i.key === k);
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [screen, setScreen] = useState(byKey('ecommerce'));
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false); // drawer (phone / tablet)
+  const [sidebarOpen, setSidebarOpen] = useState(true); // fixed sidebar (desktop)
   const [cart, setCart] = useState({});
   const [tasas, setTasas] = useState([]);
   const [userMenu, setUserMenu] = useState(false);
   const [lastAccess, setLastAccess] = useState('');
+  const [headerHeight, setHeaderHeight] = useState(64);
+
+  // Phone / tablet / desktop, shared with every screen through LayoutContext
+  const { width } = useWindowDimensions();
+  const layout = useMemo(() => computeLayout(width, sidebarOpen), [width, sidebarOpen]);
 
   useEffect(() => {
     if (!user) return;
@@ -57,6 +65,10 @@ export default function App() {
     setScreen(byKey('ecommerce'));
   };
 
+  const go = (item) => { setScreen(item); setMenuOpen(false); };
+  const logout = () => { setMenuOpen(false); setUserMenu(false); setUser(null); setCart({}); };
+  const toggleMenu = () => (layout.isDesktop ? setSidebarOpen((v) => !v) : setMenuOpen(true));
+
   if (!user) {
     return (
       <>
@@ -67,39 +79,48 @@ export default function App() {
   }
 
   let content;
-  if (screen.key === 'ecommerce') content = <EcommerceScreen cart={cart} onAdd={(p) => change(p, 1)} />;
+  if (screen.key === 'ecommerce')
+    content = <EcommerceScreen cart={cart} cartCount={cartCount} onAdd={(p) => change(p, 1)} onCart={() => setScreen(CART)} />;
   else if (screen.key === 'carrito')
     content = <CartScreen cart={cart} onChange={change} onCheckout={checkout} onShop={() => setScreen(byKey('ecommerce'))} />;
   else if (screen.key === 'perfil') content = <ProfileScreen user={user} lastAccess={lastAccess} initialTab={screen.tab} />;
   else if (screen.modulo) content = <ListScreen item={screen} />;
-  else content = <InfoScreen title={screen.label} text={screen.info} />;
+  else content = <InfoScreen title={screen.label} text={screen.info} icon={screen.icon} />;
 
   return (
-    <SafeAreaView style={s.container}>
-      <StatusBar style="light" />
-      <Header user={user} tasas={tasas} cartCount={cartCount} onMenu={() => setMenuOpen(true)} onCart={() => setScreen(CART)} onUser={() => setUserMenu(true)} />
-      <View style={s.body}>{content}</View>
-      <UserMenu
-        visible={userMenu}
-        onClose={() => setUserMenu(false)}
-        onTab={(tab) => { setUserMenu(false); setScreen({ key: 'perfil', label: 'Mi Perfil', tab }); }}
-        onSoon={(l) => { setUserMenu(false); Alert.alert(l, 'Próximamente'); }}
-        onLogout={() => { setUserMenu(false); setUser(null); setCart({}); }}
-      />
-      <Drawer
-        user={user}
-        visible={menuOpen}
-        current={screen.key}
-        onSelect={(item) => { setScreen(item); setMenuOpen(false); }}
-        onClose={() => setMenuOpen(false)}
-        onLogout={() => { setMenuOpen(false); setUser(null); setCart({}); }}
-      />
-    </SafeAreaView>
+    <LayoutContext.Provider value={layout}>
+      <SafeAreaView style={s.container}>
+        <StatusBar style="light" />
+        <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+          <Header user={user} tasas={tasas} cartCount={cartCount} onMenu={toggleMenu} onCart={() => setScreen(CART)} onUser={() => setUserMenu(true)} />
+        </View>
+        <View style={s.main}>
+          {layout.isDesktop && sidebarOpen && <Sidebar current={screen.key} onSelect={go} onLogout={logout} />}
+          <View style={s.body}>{content}</View>
+        </View>
+        <UserMenu
+          visible={userMenu}
+          top={headerHeight}
+          onClose={() => setUserMenu(false)}
+          onTab={(tab) => { setUserMenu(false); setScreen({ key: 'perfil', label: 'Mi Perfil', icon: 'user', tab }); }}
+          onSoon={(l) => { setUserMenu(false); Alert.alert(l, 'Próximamente'); }}
+          onLogout={logout}
+        />
+        <Drawer
+          user={user}
+          visible={menuOpen && !layout.isDesktop}
+          current={screen.key}
+          onSelect={go}
+          onClose={() => setMenuOpen(false)}
+          onLogout={logout}
+        />
+      </SafeAreaView>
+    </LayoutContext.Provider>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  // On wide screens (web) keep the content centered instead of using the whole page
-  body: { flex: 1, width: '100%', maxWidth: 2400, alignSelf: 'center' },
+  main: { flex: 1, flexDirection: 'row' },
+  body: { flex: 1 },
 });

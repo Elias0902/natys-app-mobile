@@ -21,8 +21,8 @@ export default function StatusChips({ statuses, selected, onSelect }) {
 }
 
 const styles = StyleSheet.create({
-  group: { flexDirection: 'row', flexWrap: 'wrap', borderColor: 'rgba(255,255,255,0.6)', borderWidth: 1, borderRadius: 4, overflow: 'hidden' },
-  chip: { paddingHorizontal: 10, paddingVertical: 5 },
+  group: { flexDirection: 'row', flexWrap: 'wrap', borderColor: 'rgba(255,255,255,0.6)', borderWidth: 1, borderRadius: 6, overflow: 'hidden' },
+  chip: { paddingHorizontal: 11, paddingVertical: 6 },
   divider: { borderLeftColor: 'rgba(255,255,255,0.6)', borderLeftWidth: 1 },
   chipOn: { backgroundColor: '#fff' },
   chipText: { color: '#fff', fontSize: 11, fontWeight: '700' },

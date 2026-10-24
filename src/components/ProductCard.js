@@ -1,55 +1,53 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme';
 import { money } from '../ui';
+import ActionButton from './ActionButton';
 
-// One product of the catalog
-export default function ProductCard({ product, qty, onAdd, width, last }) {
+// One product of the catalog (width comes from ProductTable)
+export default function ProductCard({ product, qty, onAdd, width }) {
   return (
-    <View style={[styles.productCard, width && { width, marginRight: last ? 0 : '1.5%' }]}>
+    <View style={[styles.productCard, width ? { width } : null]}>
       <View style={styles.image}>
         <Text style={{ fontSize: 40 }}>🍪</Text>
       </View>
       <View style={styles.badgeContainer}>
-        <Text style={styles.categoryBadge}>{product.nombre_categoria}</Text>
+        <Text style={styles.categoryBadge} numberOfLines={1}>{product.nombre_categoria}</Text>
       </View>
       <Text style={styles.productName} numberOfLines={2}>{product.nombre_producto}</Text>
-      {product.descripcion ? <Text style={styles.description}>{product.descripcion}</Text> : null}
+      {product.descripcion ? <Text style={styles.description} numberOfLines={2}>{product.descripcion}</Text> : null}
 
       <View style={styles.footerRow}>
         <Text style={styles.price}>{money(product.precio_venta)}</Text>
         <Text style={styles.stock}>STOCK: {product.stock}</Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={() => onAdd(product)}>
-        <Text style={styles.buttonText}>{qty ? `Agregar (${qty})` : 'Agregar'}</Text>
-      </TouchableOpacity>
+      <ActionButton icon="cart" label={qty ? `Agregar (${qty})` : 'Agregar'} onPress={() => onAdd(product)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   productCard: {
-    width: '48.5%',
     backgroundColor: colors.card,
     padding: 12,
     borderRadius: 12,
-    marginBottom: 12,
     borderColor: colors.border,
     borderWidth: 1,
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
   },
   image: {
-    height: 90,
+    height: 100,
     backgroundColor: '#1e293b',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   badgeContainer: {
     alignSelf: 'flex-start',
+    maxWidth: '100%',
     backgroundColor: colors.red,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -81,7 +79,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: 8,
-    marginBottom: 8,
+    marginTop: 'auto',
+    marginBottom: 10,
   },
   price: {
     fontSize: 16,
@@ -92,16 +91,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: colors.muted,
-  },
-  button: {
-    backgroundColor: colors.red,
-    borderRadius: 8,
-    padding: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
   },
 });

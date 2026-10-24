@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import { Page, PageHeader } from '../components/Page';
 import FilterableRecordTable from '../components/FilterableRecordTable';
 import RecordDetailModal from '../components/RecordDetailModal';
 import RecordFormModal from '../components/RecordFormModal';
@@ -26,9 +27,9 @@ export default function ListScreen({ item }) {
 
   const config = fieldsFor(item.modulo, records[0]);
 
-  // Table columns: # (id) + the fields of the module
+  // Table columns: ID + the fields of the module
   const columns = [
-    { key: config.id, label: config.idLabel || '#', kind: 'id' },
+    { key: config.id, label: config.idLabel || 'ID', kind: 'id' },
     ...config.fields.map((f) => ({
       key: f.key,
       label: f.label,
@@ -84,56 +85,50 @@ export default function ListScreen({ item }) {
     load();
   };
 
-  if (error) return <View style={styles.center}><Text style={styles.error}>{error}</Text></View>;
+  const header = (
+    <PageHeader
+      icon={item.icon}
+      title={`Gestión de ${item.label}`}
+      crumb={['Inicio', item.group, item.label].filter(Boolean).join('  ›  ')}>
+      {!error && <ActionButton icon="plus" size="lg" label={`Registrar ${config.singular}`} onPress={openCreate} />}
+    </PageHeader>
+  );
+
+  if (error) {
+    return (
+      <Page>
+        {header}
+        <Text style={styles.error}>{error}</Text>
+      </Page>
+    );
+  }
 
   return (
-    <View style={styles.mainWrapper}>
-      <View style={styles.pageHeader}>
-        <View style={styles.titleRow}>
-          <View style={styles.iconCircle}><Text style={styles.icon}>☰</Text></View>
-          <View style={{ flexShrink: 1 }}>
-            <Text style={styles.title}>Gestión de {item.label}</Text>
-            <Text style={styles.crumb}>Inicio  ›  {item.label}</Text>
-          </View>
-        </View>
-        <ActionButton label={`+  Registrar ${config.singular}`} onPress={openCreate} style={styles.addBtn} />
-      </View>
-
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-
-      <FilterableRecordTable
-        title={`Consulta de ${item.label}`}
-        records={records}
-        columns={columns}
-        idKey={config.id}
-        moduleKey={item.key}
-        loading={loading}
-        onRefresh={load}
-        onView={setViewing}
-        onEdit={openEdit}
-        onDelete={setDeleting}
-      />
+    <>
+      <Page refreshing={loading && records.length > 0} onRefresh={load}>
+        {header}
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+        <FilterableRecordTable
+          title={`Consulta de ${item.label}`}
+          records={records}
+          columns={columns}
+          idKey={config.id}
+          moduleKey={item.key}
+          loading={loading}
+          onView={setViewing}
+          onEdit={openEdit}
+          onDelete={setDeleting}
+        />
+      </Page>
 
       <RecordDetailModal record={viewing} moduleLabel={config.singular} onClose={() => setViewing(null)} onEdit={openEdit} />
       <RecordFormModal visible={formOpen} config={config} record={editing} moduleLabel={config.singular} onClose={closeForm} onSave={save} />
       <ConfirmDeleteModal record={deleting} title={deleting ? recordTitle(deleting) : ''} onClose={() => setDeleting(null)} onConfirm={remove} />
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  mainWrapper: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  pageHeader: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 10, marginVertical: 4 },
-  iconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.red, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  icon: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  title: { fontSize: 22, fontWeight: 'bold', color: colors.text },
-  crumb: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  addBtn: { borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, marginLeft: 0, marginVertical: 4 },
-  message: { backgroundColor: '#14532d', color: '#4ade80', fontWeight: '700', textAlign: 'center', padding: 8, marginHorizontal: 12, marginBottom: 10, borderRadius: 8, overflow: 'hidden' },
-  center: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 },
-  error: { color: '#f87171', textAlign: 'center' },
+  message: { backgroundColor: '#14532d', color: '#4ade80', fontWeight: '700', textAlign: 'center', padding: 10, marginBottom: 14, borderRadius: 8, overflow: 'hidden' },
+  error: { color: colors.redSoft, textAlign: 'center', backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 24, overflow: 'hidden' },
 });

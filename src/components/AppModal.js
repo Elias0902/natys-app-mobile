@@ -31,5 +31,5 @@ const styles = StyleSheet.create({
   title: { color: '#fff', fontSize: 17, fontWeight: 'bold', flex: 1 },
   close: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginLeft: 12 },
   body: { flexGrow: 0 },
-  footer: { flexDirection: 'row', justifyContent: 'flex-end', padding: 12, borderTopColor: colors.border, borderTopWidth: 1 },
+  footer: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, padding: 12, borderTopColor: colors.border, borderTopWidth: 1 },
 });

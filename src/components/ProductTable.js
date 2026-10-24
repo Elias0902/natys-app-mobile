@@ -1,48 +1,43 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, useWindowDimensions } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme';
+import { useLayout } from '../layout';
 import ProductCard from './ProductCard';
 
-// Filters the products with the text from SearchBar and renders one ProductCard per match
+// Filters the products with the text from SearchBar and renders one ProductCard per match.
+// The number of columns depends on the real width of the grid (2 on phones, up to 5 on big screens).
 export default function ProductTable({ products, filterText, cart, onAdd }) {
-  // 2 columns on phones, 3 on tablets, 4 on desktop
-  const { width } = useWindowDimensions();
-  const perRow = width >= 1100 ? 4 : width >= 750 ? 3 : 2;
-  const cardWidth = `${(100 - (perRow - 1) * 1.5) / perRow}%`;
-  const rows = [];
+  const { isPhone, contentWidth } = useLayout();
+  const [width, setWidth] = useState(contentWidth);
 
-  products.forEach((product) => {
-    if (product.nombre_producto.toLowerCase().indexOf(filterText.toLowerCase()) === -1) {
-      return;
-    }
+  const gap = isPhone ? 10 : 16;
+  const minCard = isPhone ? 150 : 230;
+  const perRow = Math.max(2, Math.floor((width + gap) / (minCard + gap)));
+  const cardWidth = Math.floor((width - gap * (perRow - 1)) / perRow);
 
-    rows.push(
-      <ProductCard
-        key={product.id_producto}
-        product={product}
-        qty={cart[product.id_producto]?.qty || 0}
-        width={cardWidth}
-        last={rows.length % perRow === perRow - 1}
-        onAdd={onAdd}
-      />
-    );
-  });
+  const q = filterText.trim().toLowerCase();
+  const list = products.filter((p) => p.nombre_producto.toLowerCase().includes(q));
 
   return (
-    <ScrollView style={styles.tableContainer} contentContainerStyle={styles.grid}>
-      {rows.length > 0 ? (
-        rows
+    <View style={[styles.grid, { gap }]} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {list.length > 0 ? (
+        list.map((product) => (
+          <ProductCard
+            key={product.id_producto}
+            product={product}
+            qty={cart[product.id_producto]?.qty || 0}
+            width={cardWidth}
+            onAdd={onAdd}
+          />
+        ))
       ) : (
         <Text style={styles.noResults}>No se encontraron productos.</Text>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tableContainer: {
-    flex: 1,
-  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

@@ -1,11 +1,13 @@
 import React from 'react';
 import { StyleSheet, View, TextInput } from 'react-native';
 import { colors } from '../theme';
+import Icon from './Icon';
 
 // Controlled search input: the text lives in the parent (FilterableProductTable / FilterableRecordTable)
-export default function SearchBar({ filterText, onChangeText, placeholder = 'Buscar...' }) {
+export default function SearchBar({ filterText, onChangeText, placeholder = 'Buscar...', style }) {
   return (
-    <View style={styles.searchContainer}>
+    <View style={[styles.box, style]}>
+      <Icon name="search" size={16} color={colors.muted} />
       <TextInput
         style={styles.input}
         placeholder={placeholder}
@@ -18,17 +20,22 @@ export default function SearchBar({ filterText, onChangeText, placeholder = 'Bus
 }
 
 const styles = StyleSheet.create({
-  searchContainer: {
-    marginBottom: 12,
-  },
-  input: {
-    height: 45,
+  box: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 42,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
-    backgroundColor: colors.card,
-    fontSize: 15,
+    backgroundColor: colors.bg,
+  },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    alignSelf: 'stretch',
+    fontSize: 14,
     color: colors.text,
     outlineStyle: 'none',
   },
