@@ -101,5 +101,5 @@ export default function App() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   // On wide screens (web) keep the content centered instead of using the whole page
-  body: { flex: 1, width: '100%', maxWidth: 1000, alignSelf: 'center' },
+  body: { flex: 1, width: '100%', maxWidth: 1400, alignSelf: 'center' },
 });

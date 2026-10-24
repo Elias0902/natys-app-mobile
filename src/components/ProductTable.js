@@ -1,10 +1,14 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, useWindowDimensions } from 'react-native';
 import { colors } from '../theme';
 import ProductCard from './ProductCard';
 
 // Filters the products with the text from SearchBar and renders one ProductCard per match
 export default function ProductTable({ products, filterText, cart, onAdd }) {
+  // 2 columns on phones, 3 on tablets, 4 on desktop
+  const { width } = useWindowDimensions();
+  const perRow = width >= 1100 ? 4 : width >= 750 ? 3 : 2;
+  const cardWidth = `${(100 - (perRow - 1) * 1.5) / perRow}%`;
   const rows = [];
 
   products.forEach((product) => {
@@ -17,6 +21,8 @@ export default function ProductTable({ products, filterText, cart, onAdd }) {
         key={product.id_producto}
         product={product}
         qty={cart[product.id_producto]?.qty || 0}
+        width={cardWidth}
+        last={rows.length % perRow === perRow - 1}
         onAdd={onAdd}
       />
     );
@@ -40,7 +46,6 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
   },
   noResults: {
     width: '100%',

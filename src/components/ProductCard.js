@@ -4,9 +4,9 @@ import { colors } from '../theme';
 import { money } from '../ui';
 
 // One product of the catalog
-export default function ProductCard({ product, qty, onAdd }) {
+export default function ProductCard({ product, qty, onAdd, width, last }) {
   return (
-    <View style={styles.productCard}>
+    <View style={[styles.productCard, width && { width, marginRight: last ? 0 : '1.5%' }]}>
       <View style={styles.image}>
         <Text style={{ fontSize: 40 }}>🍪</Text>
       </View>

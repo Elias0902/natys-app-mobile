@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { colors } from '../theme';
 import { entriesOf, statusOf } from '../ui';
-import RecordRow, { COL, colWidth } from './RecordRow';
+import RecordRow, { COL, colWidth, cellSize } from './RecordRow';
 
 // Table of the module: header + one RecordRow per record that matches the search and status
 // Scrolls sideways on small screens, like the table of the web system.
@@ -37,13 +37,13 @@ export default function RecordTable({ records, columns, idKey, filterText, statu
     <ScrollView
       style={styles.tableContainer}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={colors.red} />}>
-      <ScrollView horizontal>
-        <View style={{ minWidth: width, flexGrow: 1 }}>
+      <ScrollView horizontal contentContainerStyle={{ minWidth: '100%', flexGrow: 1 }}>
+        <View style={{ minWidth: width, width: '100%' }}>
           <View style={styles.headRow}>
             {columns.map((c) => (
-              <Text key={c.key} style={[styles.headCell, { width: colWidth(c) }]}>{c.label}</Text>
+              <Text key={c.key} style={[styles.headCell, cellSize(colWidth(c))]}>{c.label}</Text>
             ))}
-            <Text style={[styles.headCell, { width: COL.acciones }]}>ACCIONES</Text>
+            <Text style={[styles.headCell, cellSize(COL.acciones)]}>ACCIONES</Text>
           </View>
 
           {loading && records.length === 0 ? (

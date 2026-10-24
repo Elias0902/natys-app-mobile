@@ -6,6 +6,8 @@ import ActionButton from './ActionButton';
 
 export const COL = { id: 90, field: 160, money: 120, estado: 130, acciones: 300 };
 export const colWidth = (c) => COL[c.kind] || COL.field;
+// Each column has a minimum width and grows to fill the table on wide screens
+export const cellSize = (w) => ({ minWidth: w, flexBasis: w, flexGrow: 1 });
 
 // One row of the table: values of each column + Consultar / Modificar / Eliminar
 export default function RecordRow({ record, columns, striped, onView, onEdit, onDelete }) {
@@ -24,10 +26,10 @@ export default function RecordRow({ record, columns, striped, onView, onEdit, on
         } else {
           content = <Text style={styles.text} numberOfLines={2}>{v === undefined || v === null ? '' : String(v)}</Text>;
         }
-        return <View key={c.key} style={[styles.cell, { width: colWidth(c) }]}>{content}</View>;
+        return <View key={c.key} style={[styles.cell, cellSize(colWidth(c))]}>{content}</View>;
       })}
 
-      <View style={[styles.cell, styles.actions, { width: COL.acciones }]}>
+      <View style={[styles.cell, styles.actions, cellSize(COL.acciones)]}>
         <ActionButton label="Consultar" variant="outline" onPress={() => onView(record)} style={styles.btn} />
         <ActionButton label="Modificar" variant="outline" onPress={() => onEdit(record)} style={styles.btn} />
         <ActionButton label="Eliminar" variant="danger" onPress={() => onDelete(record)} style={styles.btn} />
@@ -45,6 +47,6 @@ const styles = StyleSheet.create({
   money: { alignSelf: 'flex-start', color: colors.text, borderColor: colors.text, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 2, fontSize: 12, fontWeight: '800' },
   pill: { alignSelf: 'flex-start', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
   pillText: { fontSize: 11, fontWeight: '800' },
-  actions: { flexDirection: 'row', alignItems: 'center' },
+  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
   btn: { marginLeft: 0, marginRight: 6, paddingHorizontal: 10 },
 });
