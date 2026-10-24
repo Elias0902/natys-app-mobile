@@ -18,7 +18,7 @@ On Windows you can also double-click `iniciar.bat` (or `iniciar-web.bat`).
 
 - `USE_MOCK = true` runs the app on sample data (no backend needed).
 - To use the real system set `USE_MOCK = false` and `BASE_URL` to your server (e.g. `http://192.168.1.50/natys-larence`).
-- Copy `php/login_movil.php` and `php/lista_movil.php` into `natys-larence/api/`.
+- Copy `php/login_movil.php`, `php/lista_movil.php` and `php/crud_movil.php` into `natys-larence/api/` (check the action names in `crud_movil.php`).
 
 ## Structure
 

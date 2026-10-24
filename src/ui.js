@@ -21,3 +21,7 @@ export const entriesOf = (row) =>
 export const findEntry = (entries, re) => entries.find(([k]) => re.test(k));
 export const fieldLabel = (k) => k.replace(/_/g, ' ');
 export const statusOf = (row) => findEntry(entriesOf(row), /estado/)?.[1];
+export const recordTitle = (row) => {
+  const e = entriesOf(row);
+  return findEntry(e, /^nombre|^name|^placa|^accion|^mensaje|^producto|^cliente|^proveedor|^fecha/)?.[1] ?? e[1]?.[1] ?? e[0]?.[1];
+};
