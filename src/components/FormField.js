@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../utils/theme';
 
 // One input of the form: text / number / date, or option buttons for 'select'
 export default function FormField({ field, value, onChange, error, editable = true }) {

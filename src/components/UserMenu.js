@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, Modal, Pressable, StyleSheet } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../utils/theme';
 
 const ITEMS = [
   { icon: '👤', label: 'Mi Perfil', tab: 'perfil' },

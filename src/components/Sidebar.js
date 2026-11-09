@@ -1,6 +1,6 @@
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { colors } from '../theme';
-import { SIDEBAR_WIDTH } from '../layout';
+import { colors } from '../utils/theme';
+import { SIDEBAR_WIDTH } from '../utils/layout';
 import MenuList from './MenuList';
 
 // Fixed menu on the left for desktop screens (same idea as the web system)

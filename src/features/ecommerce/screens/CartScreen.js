@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { colors } from '../theme';
-import { money } from '../ui';
-import { useLayout } from '../layout';
-import { Page, PageHeader } from '../components/Page';
-import ActionButton from '../components/ActionButton';
-import Icon from '../components/Icon';
+import { colors } from '../../../utils/theme';
+import { money } from '../../../utils/format';
+import { useLayout } from '../../../utils/layout';
+import { Page, PageHeader } from '../../../components/Page';
+import ActionButton from '../../../components/ActionButton';
+import Icon from '../../../components/Icon';
 
 // Same limits as Pedido::Registrar_Pedido
 const MIN_BOXES = 100;

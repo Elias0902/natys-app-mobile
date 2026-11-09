@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, TextInput } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../utils/theme';
 import Icon from './Icon';
 
 // Controlled search input: the text lives in the parent (FilterableProductTable / FilterableRecordTable)

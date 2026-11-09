@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../utils/theme';
 import Icon from './Icon';
 
 // Button used in tables, cards, page headers and modals.

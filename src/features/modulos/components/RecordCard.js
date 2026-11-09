@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
-import ActionButton from './ActionButton';
+import { colors } from '../../../utils/theme';
+import ActionButton from '../../../components/ActionButton';
 import { CellValue } from './RecordRow';
 
 const LABEL_WIDTH = 96;

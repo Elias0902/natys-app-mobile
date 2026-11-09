@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../../../utils/theme';
 
 // Status filter buttons inside the red band (Todos / Pendientes / Pagados ...)
 export default function StatusChips({ statuses, selected, onSelect }) {

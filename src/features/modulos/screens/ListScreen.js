@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { Page, PageHeader } from '../components/Page';
+import { Page, PageHeader } from '../../../components/Page';
 import FilterableRecordTable from '../components/FilterableRecordTable';
 import RecordDetailModal from '../components/RecordDetailModal';
 import RecordFormModal from '../components/RecordFormModal';
-import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
-import ActionButton from '../components/ActionButton';
-import { getList, createRecord, updateRecord, deleteRecord } from '../api';
+import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
+import ActionButton from '../../../components/ActionButton';
+import { getList, createRecord, updateRecord, deleteRecord } from '../services/modulosApi';
 import { fieldsFor } from '../fields';
-import { recordTitle } from '../ui';
-import { colors } from '../theme';
+import { recordTitle } from '../../../utils/format';
+import { colors } from '../../../utils/theme';
 
 // "Gestión de ..." for every module of the menu (Proveedores, Pedidos, Pagos...)
 // Registrar · Consultar (table + search) · Modificar · Eliminar

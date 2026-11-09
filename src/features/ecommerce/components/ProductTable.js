@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
-import { useLayout } from '../layout';
+import { colors } from '../../../utils/theme';
+import { useLayout } from '../../../utils/layout';
 import ProductCard from './ProductCard';
 
 // Filters the products with the text from SearchBar and renders one ProductCard per match.

@@ -60,10 +60,4 @@ $_SESSION['s_usuario'] = [
     'id_cliente'     => $u['id_cliente'] ?? null,
 ];
 
-echo json_encode(['status' => true, 'user' => [
-    'id_usuario'     => $u['id_usuario'],
-    'nombre_usuario' => $u['nombre_usuario'],
-    'email_usuario'  => $u['email_usuario'],
-    'rol_usuario'    => $u['nombre_rol'],
-    'modulos'        => movil_modulos_visibles(), // the app builds its menu from this list
-]]);
+echo json_encode(['status' => true, 'user' => movil_usuario()]);

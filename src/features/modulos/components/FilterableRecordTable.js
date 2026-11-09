@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../theme';
-import { entriesOf, statusOf } from '../ui';
-import { useLayout } from '../layout';
-import Icon from './Icon';
-import SearchBar from './SearchBar';
+import { colors } from '../../../utils/theme';
+import { entriesOf, statusOf } from '../../../utils/format';
+import { useLayout } from '../../../utils/layout';
+import Icon from '../../../components/Icon';
+import SearchBar from '../../../components/SearchBar';
 import StatusChips from './StatusChips';
 import RecordTable, { tableMode } from './RecordTable';
 import RecordCard from './RecordCard';
-import Pagination from './Pagination';
+import Pagination from '../../../components/Pagination';
 
 const PAGE_SIZES = [10, 25, 50];
 

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, ActivityIndicator } from 'react-native';
-import { Page, PageHeader } from '../components/Page';
-import ActionButton from '../components/ActionButton';
+import { Page, PageHeader } from '../../../components/Page';
+import ActionButton from '../../../components/ActionButton';
 import FilterableProductTable from '../components/FilterableProductTable';
-import { getList } from '../api';
-import { colors } from '../theme';
+import { getProductos } from '../services/ecommerceApi';
+import { colors } from '../../../utils/theme';
 
 // Loads the products and passes them to FilterableProductTable
 export default function EcommerceScreen({ cart, cartCount, onAdd, onCart }) {
@@ -13,7 +13,7 @@ export default function EcommerceScreen({ cart, cartCount, onAdd, onCart }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getList('productos').then(setProducts).catch((e) => setError(e.message)).finally(() => setLoading(false));
+    getProductos().then(setProducts).catch((e) => setError(e.message)).finally(() => setLoading(false));
   }, []);
 
   return (

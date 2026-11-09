@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import AppModal from './AppModal';
-import FormField from './FormField';
-import ActionButton from './ActionButton';
+import AppModal from '../../../components/AppModal';
+import FormField from '../../../components/FormField';
+import ActionButton from '../../../components/ActionButton';
 
 // "Registrar" (record = null) and "Modificar" (record = the row to edit)
 export default function RecordFormModal({ visible, config, record, moduleLabel, onClose, onSave }) {

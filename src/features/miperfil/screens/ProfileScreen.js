@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../theme';
-import { initials } from '../ui';
-import { useLayout } from '../layout';
-import { Page, PageHeader } from '../components/Page';
+import { colors } from '../../../utils/theme';
+import { initials } from '../../../utils/format';
+import { useLayout } from '../../../utils/layout';
+import { Page, PageHeader } from '../../../components/Page';
 
 const TABS = [
   { key: 'perfil', label: 'Mi Perfil' },

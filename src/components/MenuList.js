@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { MENU, menuFor } from '../menu';
-import { colors } from '../theme';
+import { MENU, menuFor } from '../navigation/menu';
+import { colors } from '../utils/theme';
 import Icon from './Icon';
 
 const groupOf = (key) => MENU.find((m) => m.children?.some((c) => c.key === key))?.label;

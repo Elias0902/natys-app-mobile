@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../utils/theme';
 import { Page, PageHeader } from '../components/Page';
 import Icon from '../components/Icon';
 

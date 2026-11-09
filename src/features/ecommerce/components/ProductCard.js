@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
-import { money } from '../ui';
-import ActionButton from './ActionButton';
+import { colors } from '../../../utils/theme';
+import { money } from '../../../utils/format';
+import ActionButton from '../../../components/ActionButton';
 
 // One product of the catalog (width comes from ProductTable)
 export default function ProductCard({ product, qty, onAdd, width }) {

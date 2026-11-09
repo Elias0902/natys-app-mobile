@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Linking, ScrollView, Animated, Easing, Image, useWindowDimensions } from 'react-native';
-import { login, signup, resetPassword } from '../api';
-import { LANDING_URL } from '../config';
-import { colors } from '../theme';
+import { login, signup, resetPassword } from '../services/authApi';
+import { LANDING_URL } from '../../../utils/config';
+import { colors } from '../../../utils/theme';
 import LoginIllustration from '../components/LoginIllustration';
 
 // Three views: login | signup | reset. On wide screens the illustration and the form swap sides.
@@ -47,14 +47,14 @@ function signupError(f) {
   return '';
 }
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ notice = '', onLogin }) {
   const { width } = useWindowDimensions();
   const wide = width >= 760;
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '', tipo_id: 'V', rif: '', nombre: '', tlf: '', direccion: '', sector: '' });
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
+  const [info, setInfo] = useState(notice);
   const [loading, setLoading] = useState(false);
   const [panelW, setPanelW] = useState(0);
 
@@ -107,7 +107,7 @@ export default function LoginScreen({ onLogin }) {
 
   const formView = (
     <Animated.View style={{ opacity: fade }}>
-      <Image source={require('../../assets/logo-clean.png')} style={s.logo} resizeMode="contain" />
+      <Image source={require('../../../../assets/logo-clean.png')} style={s.logo} resizeMode="contain" />
       <Text style={s.title}>{m.title}</Text>
       <Text style={s.sub}>{m.sub}</Text>
 

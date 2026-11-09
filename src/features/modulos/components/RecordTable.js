@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../../../utils/theme';
 import RecordRow, { ACTIONS_WIDTH, COL, cellStyle } from './RecordRow';
 
 const PANEL_CHROME = 34; // border + padding of the "Consulta de ..." panel

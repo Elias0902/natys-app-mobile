@@ -1,6 +1,6 @@
 import { View, Text, Image, ScrollView, Modal, Pressable, StyleSheet, Platform } from 'react-native';
-import { colors } from '../theme';
-import { initials } from '../ui';
+import { colors } from '../utils/theme';
+import { initials } from '../utils/format';
 import MenuList from './MenuList';
 
 // Side menu for phones and tablets (on desktop the Sidebar is always visible instead)

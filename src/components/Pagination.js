@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../utils/theme';
 
 // Up to 5 page numbers around the current page
 const pageNumbers = (page, pages) => {

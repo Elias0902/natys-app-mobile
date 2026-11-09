@@ -2,7 +2,11 @@
 // Copy this file to natys-larence/api/_movil_comun.php
 // Shared by lista_movil.php and crud_movil.php: modules, session and role permissions.
 header('Content-Type: application/json');
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    // Keeps the cookie when the app is closed. How long the session lasts is decided by session.gc_maxlifetime.
+    session_set_cookie_params(['lifetime' => 2592000, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
+    session_start();
+}
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/config.php';
@@ -72,4 +76,16 @@ function movil_puede_consultar(string $clave): bool {
 
 function movil_modulos_visibles(): array {
     return array_values(array_filter(array_keys(MOVIL_MODULOS), 'movil_puede_consultar'));
+}
+
+// What the app receives about the logged-in user
+function movil_usuario(): array {
+    $u = $_SESSION['s_usuario'];
+    return [
+        'id_usuario'     => $u['id_usuario'],
+        'nombre_usuario' => $u['nombre_usuario'],
+        'email_usuario'  => $u['email_usuario'],
+        'rol_usuario'    => $u['rol_usuario'],
+        'modulos'        => movil_modulos_visibles(), // the app builds its menu from this list
+    ];
 }

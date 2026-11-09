@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
-import { statusStyle, money } from '../ui';
-import ActionButton from './ActionButton';
+import { colors } from '../../../utils/theme';
+import { statusStyle, money } from '../../../utils/format';
+import ActionButton from '../../../components/ActionButton';
 
 // Minimum width of each kind of column. Text columns ('field') take most of the extra space,
 // the others grow a little, and the actions column keeps a fixed width on the right.

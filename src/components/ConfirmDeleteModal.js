@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../utils/theme';
 import AppModal from './AppModal';
 import ActionButton from './ActionButton';
 

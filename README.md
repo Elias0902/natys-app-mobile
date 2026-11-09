@@ -14,23 +14,28 @@ On Windows you can also double-click `iniciar.bat` (or `iniciar-web.bat`).
 
 ## Backend
 
-`src/config.js`:
+`src/utils/config.js`:
 
 - `USE_MOCK = true` runs the app on sample data (no backend needed).
 - To use the real system set `USE_MOCK = false` and `BASE_URL` to your server (e.g. `http://192.168.1.50/natys-larence`).
-- Copy `php/login_movil.php`, `php/lista_movil.php` and `php/crud_movil.php` into `natys-larence/api/` (check the action names in `crud_movil.php`).
+- Copy every file of `php/` into `natys-larence/api/`.
 
 ## Structure
 
 ```
-App.js            navigation state, cart, layout (sidebar on desktop, drawer on phones)
-src/api.js        login / signup / reset / generic list calls (+ mock mode)
-src/menu.js       sidebar structure (same as the web system)
-src/layout.js     breakpoints (phone < 768 < tablet < 1024 < desktop) and max content width
-src/screens/      Login, Ecommerce, Cart, Profile, List, Info
-src/components/   Header, Sidebar, Drawer, MenuList, Page (screen + title), Icon,
-                  RecordTable / RecordRow (desktop), RecordCard (phone), Pagination...
-php/              endpoints to add to natys-larence
+index.js, App.js   entry points
+assets/            images
+src/api/           exchange rates
+src/components/    shared components (Header, Sidebar, Drawer, Page, Icon, SearchBar...)
+src/features/      one folder per feature, each with components/, screens/ and services/
+  auth/            login, sign up, password recovery
+  ecommerce/       catalog, cart and orders
+  miperfil/        user profile
+  modulos/         generic list and CRUD for the modules of the menu (forms in fields.js)
+src/screens/       global pages (Info, NotFound)
+src/navigation/    AppNavigator (session, cart, current screen) and the menu
+src/utils/         config, http, theme, layout, format, mock data
+php/               endpoints to add to natys-larence
 ```
 
 ## Responsive

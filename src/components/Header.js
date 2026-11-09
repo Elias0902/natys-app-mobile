@@ -1,7 +1,7 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { colors } from '../theme';
-import { initials } from '../ui';
-import { useLayout } from '../layout';
+import { colors } from '../utils/theme';
+import { initials } from '../utils/format';
+import { useLayout } from '../utils/layout';
 import Icon from './Icon';
 
 // Top bar.

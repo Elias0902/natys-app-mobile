@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, Modal, Pressable, TouchableOpacity, ScrollView } from 'react-native';
-import { colors } from '../theme';
+import { colors } from '../utils/theme';
 
 // Base modal used by the detail, form and delete windows
 export default function AppModal({ visible, title, onClose, children, footer }) {

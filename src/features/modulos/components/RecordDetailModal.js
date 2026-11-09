@@ -1,9 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
-import { entriesOf, fieldLabel, statusStyle } from '../ui';
-import AppModal from './AppModal';
-import ActionButton from './ActionButton';
+import { colors } from '../../../utils/theme';
+import { entriesOf, fieldLabel, statusStyle } from '../../../utils/format';
+import AppModal from '../../../components/AppModal';
+import ActionButton from '../../../components/ActionButton';
 
 // "Ver detalle": every field of one record
 export default function RecordDetailModal({ record, moduleLabel, onClose, onEdit }) {

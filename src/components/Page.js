@@ -1,7 +1,7 @@
 import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
-import { CONTENT_MAX_WIDTH, useLayout } from '../layout';
+import { colors } from '../utils/theme';
+import { CONTENT_MAX_WIDTH, useLayout } from '../utils/layout';
 import Icon from './Icon';
 
 // Scrollable screen. The content is centered and never wider than CONTENT_MAX_WIDTH,

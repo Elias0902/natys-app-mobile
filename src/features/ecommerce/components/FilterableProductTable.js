@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
-import { useLayout } from '../layout';
-import SearchBar from './SearchBar';
+import { colors } from '../../../utils/theme';
+import { useLayout } from '../../../utils/layout';
+import SearchBar from '../../../components/SearchBar';
 import ProductTable from './ProductTable';
 
 // Joins the search bar and the product grid; the filter text is shared state between both
