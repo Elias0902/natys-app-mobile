@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { MENU } from '../menu';
+import { MENU, menuFor } from '../menu';
 import { colors } from '../theme';
 import Icon from './Icon';
 
 const groupOf = (key) => MENU.find((m) => m.children?.some((c) => c.key === key))?.label;
 
 // Menu items, shared by the phone drawer and the desktop sidebar
-export default function MenuList({ current, onSelect, onLogout }) {
+export default function MenuList({ user, current, onSelect, onLogout }) {
   const [open, setOpen] = useState(() => ({ [groupOf(current)]: true }));
 
   // Keep the group of the current screen open
@@ -18,7 +18,7 @@ export default function MenuList({ current, onSelect, onLogout }) {
 
   return (
     <View style={s.list}>
-      {MENU.map((m) => {
+      {menuFor(user).map((m) => {
         if (!m.children) {
           const active = current === m.key;
           return (

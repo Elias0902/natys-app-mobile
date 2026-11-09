@@ -31,3 +31,11 @@ export const MENU = [
 
 // Flat list to look up a screen by key.
 export const FLAT = MENU.flatMap((m) => (m.children ? m.children : [m]));
+
+// Menu for one user: `user.modulos` comes from the server at login. Empty groups are dropped.
+export function menuFor(user) {
+  const allowed = (item) => !item.modulo || (user?.modulos || []).includes(item.modulo);
+  return MENU.filter(allowed)
+    .map((m) => (m.children ? { ...m, children: m.children.filter(allowed) } : m))
+    .filter((m) => !m.children || m.children.length > 0);
+}

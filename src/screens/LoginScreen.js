@@ -25,11 +25,33 @@ function Field({ icon, right, ...props }) {
   );
 }
 
+function Choice({ options, value, onChange }) {
+  return (
+    <View style={s.choices}>
+      {options.map((o) => (
+        <TouchableOpacity key={o} onPress={() => onChange(o)} style={[s.choice, value === o && s.choiceOn]}>
+          <Text style={[s.choiceText, value === o && s.choiceTextOn]}>{o}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+// Same rules as the backend (models/Autenticator.php)
+function signupError(f) {
+  if (!f.username || !f.email || !f.password || !f.rif || !f.nombre || !f.tlf || !f.direccion || !f.sector) return 'Todos los campos son obligatorios.';
+  if (!/^[a-zA-Z0-9@_]{5,20}$/.test(f.username.trim())) return 'El usuario debe tener de 5 a 20 caracteres: letras, números, @ o _.';
+  if (!/^(?=.*[A-Z])(?=.*\.)[a-zA-Z0-9.]{6,11}$/.test(f.password)) return 'La contraseña debe tener de 6 a 11 caracteres, una mayúscula y un punto. Ej: Natys12.';
+  if (f.password !== f.confirm) return 'Las contraseñas no coinciden.';
+  if (!/^\d+$/.test(f.rif.trim())) return 'La cédula o RIF solo debe tener números.';
+  return '';
+}
+
 export default function LoginScreen({ onLogin }) {
   const { width } = useWindowDimensions();
   const wide = width >= 760;
   const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '', tipo_id: 'V', rif: '', nombre: '', tlf: '', direccion: '', sector: '' });
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -61,12 +83,13 @@ export default function LoginScreen({ onLogin }) {
         setLoading(true);
         onLogin(await login(form.username.trim(), form.password));
       } else if (mode === 'signup') {
-        if (!form.username || !form.email || !form.password) return setError('Todos los campos son obligatorios.');
-        if (form.password !== form.confirm) return setError('Las contraseñas no coinciden.');
+        const invalid = signupError(form);
+        if (invalid) return setError(invalid);
         setLoading(true);
-        const r = await signup({ username: form.username.trim(), email: form.email.trim(), password: form.password });
+        const { confirm, ...data } = form;
+        const r = await signup({ ...data, username: form.username.trim(), email: form.email.trim(), rif: form.rif.trim(), nombre: form.nombre.trim(), tlf: form.tlf.trim(), direccion: form.direccion.trim() });
+        go('login'); // go() clears the messages, so the success text goes after it
         setInfo(r.message);
-        go('login');
       } else {
         if (!form.email) return setError('Ingresa tu correo.');
         setLoading(true);
@@ -95,7 +118,19 @@ export default function LoginScreen({ onLogin }) {
           onSubmitEditing={mode === 'login' ? submit : undefined}
           right={<TouchableOpacity onPress={() => setShow(!show)}><Text style={s.toggle}>{show ? 'Ocultar' : 'Ver'}</Text></TouchableOpacity>} />
       )}
-      {mode === 'signup' && <Field icon="🔒" placeholder="Confirmar contraseña" secureTextEntry={!show} value={form.confirm} onChangeText={set('confirm')} onSubmitEditing={submit} />}
+      {mode === 'signup' && (
+        <>
+          <Field icon="🔒" placeholder="Confirmar contraseña" secureTextEntry={!show} value={form.confirm} onChangeText={set('confirm')} />
+          <Text style={s.groupLabel}>Datos del cliente</Text>
+          <Choice options={['V', 'J', 'G', 'E']} value={form.tipo_id} onChange={set('tipo_id')} />
+          <Field icon="🪪" placeholder="Cédula o RIF (solo números)" keyboardType="number-pad" value={form.rif} onChangeText={set('rif')} />
+          <Field icon="🏪" placeholder="Nombre o razón social" autoCapitalize="words" value={form.nombre} onChangeText={set('nombre')} />
+          <Field icon="📞" placeholder="Teléfono" keyboardType="phone-pad" value={form.tlf} onChangeText={set('tlf')} />
+          <Field icon="📍" placeholder="Dirección" autoCapitalize="sentences" value={form.direccion} onChangeText={set('direccion')} />
+          <Text style={s.groupLabel}>Sector</Text>
+          <Choice options={['Norte', 'Sur', 'Este', 'Oeste']} value={form.sector} onChange={set('sector')} />
+        </>
+      )}
 
       {mode === 'login' && (
         <TouchableOpacity onPress={() => go('reset')} style={{ alignSelf: 'flex-end', marginBottom: 10 }}>
@@ -173,6 +208,12 @@ const s = StyleSheet.create({
   icon: { fontSize: 15, marginRight: 8 },
   input: { flex: 1, color: colors.text, paddingVertical: 13, outlineStyle: 'none' },
   toggle: { color: colors.red, fontWeight: '700', fontSize: 12 },
+  groupLabel: { color: colors.muted, fontSize: 12, fontWeight: '700', marginBottom: 8, marginTop: 2 },
+  choices: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  choice: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },
+  choiceOn: { backgroundColor: colors.red, borderColor: colors.red },
+  choiceText: { color: colors.text, fontWeight: '700', fontSize: 12 },
+  choiceTextOn: { color: '#fff' },
   link: { color: colors.red, fontWeight: '700', fontSize: 12 },
   muted: { color: colors.muted, fontSize: 12 },
   error: { color: '#f87171', marginBottom: 10, textAlign: 'center', fontSize: 13 },

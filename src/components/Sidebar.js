@@ -4,11 +4,11 @@ import { SIDEBAR_WIDTH } from '../layout';
 import MenuList from './MenuList';
 
 // Fixed menu on the left for desktop screens (same idea as the web system)
-export default function Sidebar({ current, onSelect, onLogout }) {
+export default function Sidebar({ user, current, onSelect, onLogout }) {
   return (
     <View style={s.sidebar}>
       <ScrollView contentContainerStyle={s.inner} showsVerticalScrollIndicator={false}>
-        <MenuList current={current} onSelect={onSelect} onLogout={onLogout} />
+        <MenuList user={user} current={current} onSelect={onSelect} onLogout={onLogout} />
       </ScrollView>
     </View>
   );

@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../theme';
 import { money } from '../ui';
 import { useLayout } from '../layout';
@@ -6,13 +7,48 @@ import { Page, PageHeader } from '../components/Page';
 import ActionButton from '../components/ActionButton';
 import Icon from '../components/Icon';
 
+// Same limits as Pedido::Registrar_Pedido
+const MIN_BOXES = 100;
+const MAX_BOXES = 300;
+
+// Orders need at least 100 boxes, so the quantity can be typed. Applied when leaving the field.
+function QtyInput({ qty, onSet }) {
+  const [text, setText] = useState(String(qty));
+  const commit = () => {
+    const n = parseInt(text, 10);
+    if (n > 0 && n !== qty) onSet(n);
+    else setText(String(qty));
+  };
+  return (
+    <TextInput style={s.qInput} value={text} onChangeText={setText} onBlur={commit} onSubmitEditing={commit}
+      keyboardType="number-pad" selectTextOnFocus accessibilityLabel="Cantidad" />
+  );
+}
+
 // Cart: list of products on the left and the order summary on the right (one column on phones)
 export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
+  const [contact, setContact] = useState({ telefono: '', direccion: '', observaciones: '' });
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+  const setField = (k) => (v) => setContact((c) => ({ ...c, [k]: v }));
   const { isPhone, contentWidth } = useLayout();
   const items = Object.values(cart);
   const total = items.reduce((a, i) => a + i.qty * Number(i.p.precio_venta), 0);
   const count = items.reduce((a, i) => a + i.qty, 0);
   const twoColumns = !isPhone && contentWidth >= 760;
+
+  const submit = async () => {
+    setError('');
+    if (count < MIN_BOXES || count > MAX_BOXES) return setError(`El pedido debe tener entre ${MIN_BOXES} y ${MAX_BOXES} cajas. Llevas ${count}.`);
+    if (contact.telefono.replace(/\D/g, '').length !== 11) return setError('Ingresa un teléfono válido. Ej: 0412-1234567');
+    setSending(true);
+    try {
+      await onCheckout(contact);
+    } catch (e) {
+      setError(e.message);
+      setSending(false);
+    }
+  };
 
   return (
     <Page>
@@ -40,7 +76,7 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
                   <TouchableOpacity style={s.qBtn} onPress={() => onChange(i.p, -1)} accessibilityLabel="Quitar uno">
                     <Icon name="minus" size={14} color={colors.text} />
                   </TouchableOpacity>
-                  <Text style={s.qNum}>{i.qty}</Text>
+                  <QtyInput key={i.qty} qty={i.qty} onSet={(n) => onChange(i.p, n - i.qty)} />
                   <TouchableOpacity style={s.qBtn} onPress={() => onChange(i.p, 1)} accessibilityLabel="Agregar uno">
                     <Icon name="plus" size={14} color={colors.text} />
                   </TouchableOpacity>
@@ -54,7 +90,12 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
             <Text style={s.summaryTitle}>Resumen del pedido</Text>
             <View style={s.sumRow}><Text style={s.sumLabel}>Productos</Text><Text style={s.sumValue}>{count}</Text></View>
             <View style={[s.sumRow, s.totalRow]}><Text style={s.totalLabel}>Total</Text><Text style={s.total}>{money(total)}</Text></View>
-            <ActionButton size="lg" label="Realizar pedido" onPress={onCheckout} />
+            <Text style={s.hint}>Cada pedido debe tener entre {MIN_BOXES} y {MAX_BOXES} cajas.</Text>
+            <TextInput style={s.input} placeholder="Teléfono (0412-1234567)" placeholderTextColor={colors.muted} keyboardType="phone-pad" value={contact.telefono} onChangeText={setField('telefono')} />
+            <TextInput style={s.input} placeholder="Dirección de entrega (opcional)" placeholderTextColor={colors.muted} value={contact.direccion} onChangeText={setField('direccion')} />
+            <TextInput style={s.input} placeholder="Observaciones (opcional)" placeholderTextColor={colors.muted} value={contact.observaciones} onChangeText={setField('observaciones')} />
+            {!!error && <Text style={s.error}>{error}</Text>}
+            {sending ? <ActivityIndicator color={colors.red} /> : <ActionButton size="lg" label="Realizar pedido" onPress={submit} />}
           </View>
         </View>
       )}
@@ -63,6 +104,10 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
 }
 
 const s = StyleSheet.create({
+  qInput: { width: 48, textAlign: 'center', color: colors.text, fontWeight: '700', paddingVertical: 4, borderColor: colors.border, borderWidth: 1, borderRadius: 6 },
+  hint: { color: colors.muted, fontSize: 12 },
+  input: { color: colors.text, backgroundColor: colors.bg, borderColor: colors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  error: { color: '#f87171', fontSize: 13, textAlign: 'center' },
   empty: { alignItems: 'center', gap: 14, backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 40, paddingHorizontal: 20 },
   emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
   layout: { gap: 16 },

@@ -1,7 +1,9 @@
 // Sample data used while USE_MOCK = true.
-export const MOCK_USER = { id_usuario: 1, nombre_usuario: 'superusuario_24', email_usuario: 'admin@natys.com', rol_usuario: 'Superusuario' };
+export const MOCK_USER = { id_usuario: 1, nombre_usuario: 'superusuario_24', email_usuario: 'admin@natys.com', rol_usuario: 'Superusuario',
+  modulos: ['productos', 'tasa', 'proveedores', 'pedidos', 'entregas', 'compras', 'promociones', 'pagos', 'cobrar', 'pagar', 'notificaciones'] };
 // Logging in as "cliente" opens the Ecommerce view (same as the web system for role Usuario).
-export const MOCK_CLIENT = { id_usuario: 2, nombre_usuario: 'cliente', email_usuario: 'cliente@natys.com', rol_usuario: 'Usuario' };
+export const MOCK_CLIENT = { id_usuario: 2, nombre_usuario: 'cliente', email_usuario: 'cliente@natys.com', rol_usuario: 'Usuario',
+  modulos: ['productos', 'tasa', 'pedidos'] };
 
 export const MOCK = {
   clientes: [

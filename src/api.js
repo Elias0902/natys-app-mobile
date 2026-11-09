@@ -14,9 +14,24 @@ export async function login(username, password) {
     credentials: 'include',
     body: JSON.stringify({ username, password }),
   });
-  const data = await res.json();
+  const data = await readJson(res);
   if (!data.status) throw new Error(data.message || 'No se pudo iniciar sesión');
   return data.user;
+}
+
+// Closes the PHP session (see php/logout_movil.php).
+export async function logout() {
+  if (USE_MOCK) return;
+  await fetch(`${BASE_URL}/api/logout_movil.php`, { method: 'POST', credentials: 'include' });
+}
+
+// PHP errors can come back as HTML: show a readable message instead of a JSON parse error.
+async function readJson(res) {
+  try {
+    return await res.json();
+  } catch {
+    throw new Error('Respuesta no válida del servidor');
+  }
 }
 
 // Generic list call (see php/lista_movil.php): api/lista_movil.php?modulo=<module>
@@ -85,7 +100,21 @@ export async function deleteRecord(modulo, idKey, id) {
   await crud(modulo, 'eliminar', { [idKey]: id });
 }
 
-// Sign up (TODO backend: create api/registro_movil.php; the web flow is AutenticatorController?action=registrar)
+// Order from the cart (see php/pedido_movil.php). The server sets prices and total.
+export async function createOrder(order) {
+  if (USE_MOCK) return { message: 'Pedido registrado (modo demo).' };
+  const res = await fetch(`${BASE_URL}/api/pedido_movil.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(order),
+  });
+  const json = await readJson(res);
+  if (!json.status) throw new Error(json.message || 'No se pudo registrar el pedido');
+  return json;
+}
+
+// Sign up (see php/registro_movil.php)
 export async function signup(data) {
   if (USE_MOCK) return { message: 'Cuenta creada. Revisa tu correo para activarla.' };
   const res = await fetch(`${BASE_URL}/api/registro_movil.php`, {
@@ -93,12 +122,12 @@ export async function signup(data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  const json = await res.json();
+  const json = await readJson(res);
   if (!json.status) throw new Error(json.message || 'No se pudo crear la cuenta');
   return json;
 }
 
-// Reset password (TODO backend: create api/recuperar_movil.php; the web flow is AutenticatorController?action=recuperar)
+// Reset password (see php/recuperar_movil.php)
 export async function resetPassword(email) {
   if (USE_MOCK) return { message: 'Te enviamos un enlace para restablecer tu contraseña.' };
   const res = await fetch(`${BASE_URL}/api/recuperar_movil.php`, {
@@ -106,7 +135,7 @@ export async function resetPassword(email) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
-  const json = await res.json();
+  const json = await readJson(res);
   if (!json.status) throw new Error(json.message || 'No se pudo enviar el correo');
   return json;
 }

@@ -12,7 +12,7 @@ import Drawer from './src/components/Drawer';
 import Sidebar from './src/components/Sidebar';
 import Header from './src/components/Header';
 import { FLAT } from './src/menu';
-import { getList } from './src/api';
+import { getList, createOrder, logout as endSession } from './src/api';
 import { colors } from './src/theme';
 import { LayoutContext, computeLayout } from './src/layout';
 
@@ -58,15 +58,17 @@ export default function App() {
       return next;
     });
 
-  const checkout = () => {
-    // TODO: send the order to the backend (PedidoController)
-    Alert.alert('Pedido registrado', 'Tu pedido fue enviado (modo demo).');
+  // Errors reach CartScreen, which shows them and keeps the cart
+  const checkout = async (contact) => {
+    const items = Object.values(cart).map((i) => ({ id_producto: i.p.id_producto, cantidad: i.qty }));
+    const r = await createOrder({ ...contact, items });
+    Alert.alert('Pedido registrado', r.message);
     setCart({});
     setScreen(byKey('ecommerce'));
   };
 
   const go = (item) => { setScreen(item); setMenuOpen(false); };
-  const logout = () => { setMenuOpen(false); setUserMenu(false); setUser(null); setCart({}); };
+  const logout = () => { endSession().catch(() => {}); setMenuOpen(false); setUserMenu(false); setUser(null); setCart({}); };
   const toggleMenu = () => (layout.isDesktop ? setSidebarOpen((v) => !v) : setMenuOpen(true));
 
   if (!user) {
@@ -95,7 +97,7 @@ export default function App() {
           <Header user={user} tasas={tasas} cartCount={cartCount} onMenu={toggleMenu} onCart={() => setScreen(CART)} onUser={() => setUserMenu(true)} />
         </View>
         <View style={s.main}>
-          {layout.isDesktop && sidebarOpen && <Sidebar current={screen.key} onSelect={go} onLogout={logout} />}
+          {layout.isDesktop && sidebarOpen && <Sidebar user={user} current={screen.key} onSelect={go} onLogout={logout} />}
           <View style={s.body}>{content}</View>
         </View>
         <UserMenu

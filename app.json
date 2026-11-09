@@ -23,6 +23,9 @@
     },
     "experiments": {
       "baseUrl": "/natys-app-mobile"
-    }
+    },
+    "plugins": [
+      "expo-status-bar"
+    ]
   }
 }

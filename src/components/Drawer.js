@@ -19,7 +19,7 @@ export default function Drawer({ user, visible, current, onSelect, onClose, onLo
             </View>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <MenuList current={current} onSelect={onSelect} onLogout={onLogout} />
+            <MenuList user={user} current={current} onSelect={onSelect} onLogout={onLogout} />
           </ScrollView>
         </View>
         <Pressable style={{ flex: 1 }} onPress={onClose} />
