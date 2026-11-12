@@ -21,8 +21,8 @@ export const MENU = [
   ]),
   group('Finanzas', 'dollar', [
     { key: 'pagos', label: 'Pagos', modulo: 'pagos' },
-    { key: 'cobrar', label: 'Cuentas por Cobrar', modulo: 'cobrar' },
-    { key: 'pagar', label: 'Cuentas por Pagar', modulo: 'pagar' },
+    { key: 'cuentaporcobrar', label: 'Cuentas por Cobrar', modulo: 'cobrar' }, 
+    { key: 'cuentaporpagar', label: 'Cuentas por Pagar', modulo: 'pagar' },
   ]),
   group('Configuración', 'sliders', [
     { key: 'notificaciones', label: 'Notificaciones', modulo: 'notificaciones' },

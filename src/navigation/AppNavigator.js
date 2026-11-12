@@ -13,6 +13,9 @@ import ClienteScreens from '../features/clientes/screens/ClienteScreens';
 import ProveedorScreens from '../features/proveedores/screens/ProveedorScreens';
 import PedidoScreens from '../features/pedidos/screens/PedidoScreens';
 import ProductoScreens from '../features/productos/screens/ProductoScreens';
+import CompraScreens from '../features/compras/screens/CompraScreens';
+import CuentaCobrarScreens from '../features/cuentacobrar/screens/CuentaCobrarScreens';
+import CuentaPagarScreens from '../features/cuentapagar/screens/CuentaPagarScreens';
 
 import UserMenu from '../components/UserMenu';
 import Drawer from '../components/Drawer';
@@ -148,15 +151,19 @@ export default function AppNavigator() {
   } else if (screen.key === 'perfil') {
     content = <ProfileScreen user={user} lastAccess={lastAccess} initialTab={screen.tab} />;
   } else if (screen.key === 'clientes') {
-    content = <ClienteScreens />; // <--- Pantalla real de Clientes
+    content = <ClienteScreens />;
   } else if (screen.key === 'proveedores') {
-    content = <ProveedorScreens />; // <--- Pantalla real de Proveedores
+    content = <ProveedorScreens />;
   } else if (screen.key === 'pedidos') {
-    content = <PedidoScreens />; // <--- Pantalla real de Pedidos
+    content = <PedidoScreens />;
   } else if (screen.key === 'productos_lista') {
-    content = <ProductoScreens onAdd={(p) => change(p, 1)} />; // <--- Pantalla real de Productos
-  } else if (screen.modulo) {
-    content = <ListScreen item={screen} />;
+    content = <ProductoScreens onAdd={(p) => change(p, 1)} />;
+  } else if (screen.key === 'compras') {
+    content = <CompraScreens />; // <--- Pantalla real de Compras
+  } else if (screen.key === 'cuentas_por_cobrar' || screen.key === 'cuentaporcobrar') {
+    content = <CuentaCobrarScreens />; // <--- Pantalla real de Cuentas por Cobrar
+  } else if (screen.key === 'cuentas_por_pagar' || screen.key === 'cuentaporpagar') {
+    content = <CuentaPagarScreens />; // <--- Pantalla real de Cuentas por Pagar
   } else if (screen.info) {
     content = <InfoScreen title={screen.label} text={screen.info} icon={screen.icon} />;
   } else {
