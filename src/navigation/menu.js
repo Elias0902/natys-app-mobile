@@ -1,6 +1,4 @@
 // Modules approved for the mobile app (subset of the web system sidebar).
-// `modulo` = list endpoint, `info` = static text view, `icon` = name from components/Icon.js.
-// Children of a group get the group's icon and name (used in the page title and breadcrumb).
 const group = (label, icon, children) => ({
   label,
   icon,
@@ -9,7 +7,10 @@ const group = (label, icon, children) => ({
 
 export const MENU = [
   { key: 'ecommerce', label: 'Ecommerce', modulo: 'productos', icon: 'bag' },
+  // Si deseas un módulo separado de Productos además del Ecommerce, puedes agregarlo así:
+  { key: 'productos_lista', label: 'Productos', modulo: 'productos', icon: 'tag' }, 
   group('Socios', 'users', [
+    { key: 'clientes', label: 'Clientes', modulo: 'clientes' },
     { key: 'proveedores', label: 'Proveedores', modulo: 'proveedores' },
   ]),
   group('Comercial', 'briefcase', [
@@ -29,12 +30,13 @@ export const MENU = [
   { key: 'ayuda', label: 'Centro de Ayuda', icon: 'help', info: 'Soporte: galletasnatys@gmail.com · +58 424 521 7016' },
 ];
 
-// Flat list to look up a screen by key.
 export const FLAT = MENU.flatMap((m) => (m.children ? m.children : [m]));
 
-// Menu for one user: `user.modulos` comes from the server at login. Empty groups are dropped.
+// Filtra el menú exigiendo que el módulo esté presente en `user.modulos` con acceso
 export function menuFor(user) {
-  const allowed = (item) => !item.modulo || (user?.modulos || []).includes(item.modulo);
+  const modulosPermitidos = user?.modulos || [];
+  const allowed = (item) => !item.modulo || modulosPermitidos.includes(item.modulo);
+
   return MENU.filter(allowed)
     .map((m) => (m.children ? { ...m, children: m.children.filter(allowed) } : m))
     .filter((m) => !m.children || m.children.length > 0);

@@ -4,10 +4,16 @@ import { StatusBar } from 'expo-status-bar';
 import LoginScreen from '../features/auth/screens/LoginScreen';
 import EcommerceScreen from '../features/ecommerce/screens/EcommerceScreen';
 import CartScreen from '../features/ecommerce/screens/CartScreen';
-import ListScreen from '../features/modulos/screens/ListScreen';
 import ProfileScreen from '../features/miperfil/screens/ProfileScreen';
 import InfoScreen from '../screens/InfoScreen';
 import NotFoundScreen from '../screens/NotFoundScreen';
+
+// 📌 IMPORTAMOS LAS PANTALLAS REALES CONECTADAS A TUS APIS
+import ClienteScreens from '../features/clientes/screens/ClienteScreens';
+import ProveedorScreens from '../features/proveedores/screens/ProveedorScreens';
+import PedidoScreens from '../features/pedidos/screens/PedidoScreens';
+import ProductoScreens from '../features/productos/screens/ProductoScreens';
+
 import UserMenu from '../components/UserMenu';
 import Drawer from '../components/Drawer';
 import Sidebar from '../components/Sidebar';
@@ -16,28 +22,42 @@ import { FLAT } from './menu';
 import { getTasas } from '../api/tasaApi';
 import { restoreSession, logout as endSession } from '../features/auth/services/authApi';
 import { createOrder } from '../features/ecommerce/services/ecommerceApi';
-import { setSessionExpiredHandler } from '../utils/http';
+import { setSessionExpiredHandler, request } from '../utils/http';
 import { colors } from '../utils/theme';
 import { LayoutContext, computeLayout } from '../utils/layout';
 
 const CART = { key: 'carrito', label: 'Carrito', icon: 'cart' };
 const byKey = (k) => FLAT.find((i) => i.key === k);
 
-// Decides which screen is visible, and holds the session, the cart and the layout
+async function obtenerModulosPermitidos(idRol) {
+  try {
+    const data = await request(`permisos&action=obtener_modulo&ID=${idRol}`, { method: 'GET' });
+    if (Array.isArray(data)) {
+      const permitidas = data
+        .filter(p => Number(p.status) === 1 && p.nombre_permiso === 'Consultar' && p.ruta)
+        .map(p => p.ruta);
+      return [...new Set(permitidas)];
+    }
+    return [];
+  } catch (e) {
+    console.error('Error cargando permisos de módulos:', e);
+    return [];
+  }
+}
+
 export default function AppNavigator() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [loginNotice, setLoginNotice] = useState('');
   const [screen, setScreen] = useState(byKey('ecommerce'));
-  const [menuOpen, setMenuOpen] = useState(false); // drawer (phone / tablet)
-  const [sidebarOpen, setSidebarOpen] = useState(true); // fixed sidebar (desktop)
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [cart, setCart] = useState({});
   const [tasas, setTasas] = useState([]);
   const [userMenu, setUserMenu] = useState(false);
   const [lastAccess, setLastAccess] = useState('');
   const [headerHeight, setHeaderHeight] = useState(64);
 
-  // Phone / tablet / desktop, shared with every screen through LayoutContext
   const { width } = useWindowDimensions();
   const layout = useMemo(() => computeLayout(width, sidebarOpen), [width, sidebarOpen]);
 
@@ -48,19 +68,37 @@ export default function AppNavigator() {
       setLoginNotice('Tu sesión venció. Inicia sesión de nuevo.');
       closeSession();
     });
+
     restoreSession()
-      .then(setUser)
+      .then(async (u) => {
+        if (u) {
+          const rolId = u.id_rol_usuario || u.id_rol;
+          if (rolId) {
+            u.modulos = await obtenerModulosPermitidos(rolId);
+          }
+        }
+        setUser(u);
+      })
       .catch(() => setUser(null))
       .finally(() => setCheckingSession(false));
   }, []);
 
+  const handleLoginSuccess = async (u) => {
+    setLoginNotice('');
+    if (u) {
+      const rolId = u.id_rol_usuario || u.id_rol;
+      if (rolId) {
+        u.modulos = await obtenerModulosPermitidos(rolId);
+      }
+    }
+    setUser(u);
+  };
+
   useEffect(() => {
     if (!user) return;
-    // Shown in "Mi Perfil" -> Último acceso (TODO: use the real value from the backend)
     const d = new Date(), p2 = (n) => String(n).padStart(2, '0');
     const h = d.getHours() % 12 || 12;
     setLastAccess(`${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(h)}:${p2(d.getMinutes())}:${p2(d.getSeconds())} ${d.getHours() >= 12 ? 'PM' : 'AM'}`);
-    // Dashboard was removed from the mobile app: every role lands on Ecommerce
     setScreen(byKey('ecommerce'));
     getTasas().then(setTasas).catch(() => setTasas([]));
   }, [user]);
@@ -76,7 +114,6 @@ export default function AppNavigator() {
       return next;
     });
 
-  // Errors reach CartScreen, which shows them and keeps the cart
   const checkout = async (contact) => {
     const items = Object.values(cart).map((i) => ({ id_producto: i.p.id_producto, cantidad: i.qty }));
     const r = await createOrder({ ...contact, items });
@@ -97,20 +134,34 @@ export default function AppNavigator() {
     return (
       <>
         <StatusBar style="light" />
-        <LoginScreen notice={loginNotice} onLogin={(u) => { setLoginNotice(''); setUser(u); }} />
+        <LoginScreen notice={loginNotice} onLogin={handleLoginSuccess} />
       </>
     );
   }
 
+  // 📌 RENDERIZADO DE PANTALLAS CONECTADAS DIRECTAMENTE A LAS APIS
   let content;
-  if (screen.key === 'ecommerce')
+  if (screen.key === 'ecommerce') {
     content = <EcommerceScreen cart={cart} cartCount={cartCount} onAdd={(p) => change(p, 1)} onCart={() => setScreen(CART)} />;
-  else if (screen.key === 'carrito')
+  } else if (screen.key === 'carrito') {
     content = <CartScreen cart={cart} onChange={change} onCheckout={checkout} onShop={() => setScreen(byKey('ecommerce'))} />;
-  else if (screen.key === 'perfil') content = <ProfileScreen user={user} lastAccess={lastAccess} initialTab={screen.tab} />;
-  else if (screen.modulo) content = <ListScreen item={screen} />;
-  else if (screen.info) content = <InfoScreen title={screen.label} text={screen.info} icon={screen.icon} />;
-  else content = <NotFoundScreen />;
+  } else if (screen.key === 'perfil') {
+    content = <ProfileScreen user={user} lastAccess={lastAccess} initialTab={screen.tab} />;
+  } else if (screen.key === 'clientes') {
+    content = <ClienteScreens />; // <--- Pantalla real de Clientes
+  } else if (screen.key === 'proveedores') {
+    content = <ProveedorScreens />; // <--- Pantalla real de Proveedores
+  } else if (screen.key === 'pedidos') {
+    content = <PedidoScreens />; // <--- Pantalla real de Pedidos
+  } else if (screen.key === 'productos_lista') {
+    content = <ProductoScreens onAdd={(p) => change(p, 1)} />; // <--- Pantalla real de Productos
+  } else if (screen.modulo) {
+    content = <ListScreen item={screen} />;
+  } else if (screen.info) {
+    content = <InfoScreen title={screen.label} text={screen.info} icon={screen.icon} />;
+  } else {
+    content = <NotFoundScreen />;
+  }
 
   return (
     <LayoutContext.Provider value={layout}>

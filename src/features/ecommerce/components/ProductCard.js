@@ -1,16 +1,31 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Image } from 'react-native'; // <--- 1. Importamos Image
 import { colors } from '../../../utils/theme';
 import { money } from '../../../utils/format';
 import ActionButton from '../../../components/ActionButton';
+import { BASE_URL } from '../../../utils/config'; // <--- 2. Importamos la BASE_URL
 
-// One product of the catalog (width comes from ProductTable)
 export default function ProductCard({ product, qty, onAdd, width }) {
+  // 3. Construimos la URL completa de la imagen
+  // Si tu BASE_URL es 'http://192.168.1.50/larence/api', le quitamos el '/api' 
+  // para apuntar correctamente a la carpeta assets del servidor principal.
+  const serverRoot = BASE_URL.replace('/api', '');
+  const imageUrl = product.imagen ? `${serverRoot}/${product.imagen}` : null;
+
   return (
     <View style={[styles.productCard, width ? { width } : null]}>
-      <View style={styles.image}>
-        <Text style={{ fontSize: 40 }}>🍪</Text>
+      <View style={styles.imageContainer}>
+        {imageUrl ? (
+          <Image 
+            source={{ uri: imageUrl }} 
+            style={styles.productImage} 
+            resizeMode="contain" 
+          />
+        ) : (
+          <Text style={{ fontSize: 40 }}>🍪</Text> // Fallback por si no tiene imagen
+        )}
       </View>
+
       <View style={styles.badgeContainer}>
         <Text style={styles.categoryBadge} numberOfLines={1}>{product.nombre_categoria}</Text>
       </View>
@@ -37,13 +52,18 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
   },
-  image: {
+  imageContainer: {
     height: 100,
     backgroundColor: '#1e293b',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
+    overflow: 'hidden', // Para que la imagen respete los bordes redondeados
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
   },
   badgeContainer: {
     alignSelf: 'flex-start',

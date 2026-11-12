@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Image } from 'react-native';
 import { colors } from '../../../utils/theme';
 import { money } from '../../../utils/format';
 import { useLayout } from '../../../utils/layout';
 import { Page, PageHeader } from '../../../components/Page';
 import ActionButton from '../../../components/ActionButton';
 import Icon from '../../../components/Icon';
+import { BASE_URL } from '../../../utils/config';
 
 // Same limits as Pedido::Registrar_Pedido
 const MIN_BOXES = 100;
@@ -37,6 +38,8 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
   const count = items.reduce((a, i) => a + i.qty, 0);
   const twoColumns = !isPhone && contentWidth >= 760;
 
+  const serverRoot = BASE_URL.replace('/api', '');
+
   const submit = async () => {
     setError('');
     if (count < MIN_BOXES || count > MAX_BOXES) return setError(`El pedido debe tener entre ${MIN_BOXES} y ${MAX_BOXES} cajas. Llevas ${count}.`);
@@ -65,25 +68,34 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
       ) : (
         <View style={[s.layout, twoColumns && s.layoutRow]}>
           <View style={[s.list, twoColumns && s.listWide]}>
-            {items.map((i) => (
-              <View key={i.p.id_producto} style={s.row}>
-                <View style={s.thumb}><Text style={{ fontSize: 22 }}>🍪</Text></View>
-                <View style={s.info}>
-                  <Text style={s.name} numberOfLines={2}>{i.p.nombre_producto}</Text>
-                  <Text style={s.price}>{money(i.p.precio_venta)} c/u</Text>
+            {items.map((i) => {
+              const imageUrl = i.p.imagen ? `${serverRoot}/${i.p.imagen}` : null;
+              return (
+                <View key={i.p.id_producto} style={s.row}>
+                  <View style={s.thumb}>
+                    {imageUrl ? (
+                      <Image source={{ uri: imageUrl }} style={s.thumbImage} resizeMode="cover" />
+                    ) : (
+                      <Text style={{ fontSize: 22 }}>🍪</Text>
+                    )}
+                  </View>
+                  <View style={s.info}>
+                    <Text style={s.name} numberOfLines={2}>{i.p.nombre_producto}</Text>
+                    <Text style={s.price}>{money(i.p.precio_venta)} c/u</Text>
+                  </View>
+                  <View style={s.qty}>
+                    <TouchableOpacity style={s.qBtn} onPress={() => onChange(i.p, -1)} accessibilityLabel="Quitar uno">
+                      <Icon name="minus" size={14} color={colors.text} />
+                    </TouchableOpacity>
+                    <QtyInput key={i.qty} qty={i.qty} onSet={(n) => onChange(i.p, n - i.qty)} />
+                    <TouchableOpacity style={s.qBtn} onPress={() => onChange(i.p, 1)} accessibilityLabel="Agregar uno">
+                      <Icon name="plus" size={14} color={colors.text} />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={s.sub}>{money(i.qty * Number(i.p.precio_venta))}</Text>
                 </View>
-                <View style={s.qty}>
-                  <TouchableOpacity style={s.qBtn} onPress={() => onChange(i.p, -1)} accessibilityLabel="Quitar uno">
-                    <Icon name="minus" size={14} color={colors.text} />
-                  </TouchableOpacity>
-                  <QtyInput key={i.qty} qty={i.qty} onSet={(n) => onChange(i.p, n - i.qty)} />
-                  <TouchableOpacity style={s.qBtn} onPress={() => onChange(i.p, 1)} accessibilityLabel="Agregar uno">
-                    <Icon name="plus" size={14} color={colors.text} />
-                  </TouchableOpacity>
-                </View>
-                <Text style={s.sub}>{money(i.qty * Number(i.p.precio_venta))}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
           <View style={[s.summary, twoColumns && s.summaryWide]}>
@@ -115,13 +127,13 @@ const s = StyleSheet.create({
   list: { gap: 10 },
   listWide: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12 },
-  thumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#1e293b', alignItems: 'center', justifyContent: 'center' },
+  thumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#1e293b', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  thumbImage: { width: '100%', height: '100%' },
   info: { flex: 1 },
   name: { color: colors.text, fontWeight: '600', fontSize: 13 },
   price: { color: colors.muted, fontSize: 11, marginTop: 2 },
   qty: { flexDirection: 'row', alignItems: 'center' },
   qBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  qNum: { color: colors.text, minWidth: 28, textAlign: 'center', fontWeight: '700' },
   sub: { color: '#fbbf24', fontWeight: '800', minWidth: 64, textAlign: 'right' },
   summary: { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 10 },
   summaryWide: { width: 320 },

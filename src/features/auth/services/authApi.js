@@ -1,43 +1,68 @@
-import { USE_MOCK } from '../../../utils/config';
-import { MOCK_USER, MOCK_CLIENT } from '../../../utils/mock';
 import { request } from '../../../utils/http';
+import { saveToken, removeToken } from '../../../utils/storage';
 
-// See php/login_movil.php
+// Iniciar sesión contra tu API PHP (index.php?url=autenticator&action=ingresarApi)
 export async function login(username, password) {
-  if (USE_MOCK) {
-    if (!username || !password) throw new Error('Todos los campos son obligatorios.');
-    return username.toLowerCase() === 'cliente' ? MOCK_CLIENT : MOCK_USER;
+  const data = await request('autenticator&action=ingresarApi', {
+    method: 'POST',
+    body: { usuario: username, password }
+  });
+
+  if (!data.status) {
+    throw new Error(data.message || 'No se pudo iniciar sesión');
   }
-  const data = await request('login_movil.php', { method: 'POST', body: { username, password } });
-  if (!data.status) throw new Error(data.message || 'No se pudo iniciar sesión');
-  return data.user;
+
+  // Guardamos el token Bearer recibido del backend
+  if (data.token) {
+    await saveToken(data.token);
+  }
+
+  return data.usuario || data.user;
 }
 
-// Returns the logged-in user if the server session is still alive (see php/sesion_movil.php).
+// Restaurar sesión activa si el token sigue siendo válido en el backend
 export async function restoreSession() {
-  if (USE_MOCK) return null;
-  const data = await request('sesion_movil.php');
-  return data.status ? data.user : null;
+  try {
+    const data = await request('autenticator&action=sesionApi', { method: 'GET' });
+    return data.status ? data.usuario || data.user : null;
+  } catch (e) {
+    return null;
+  }
 }
 
-// See php/logout_movil.php
+// Cerrar sesión y limpiar el almacenamiento local del token
 export async function logout() {
-  if (USE_MOCK) return;
-  await request('logout_movil.php', { method: 'POST' });
+  try {
+    await request('autenticator&action=logoutApi', { method: 'POST' });
+  } catch (e) {
+    // Aunque falle la petición al servidor, nos aseguramos de limpiar localmente
+  } finally {
+    await removeToken();
+  }
 }
 
-// See php/registro_movil.php
-export async function signup(data) {
-  if (USE_MOCK) return { message: 'Cuenta creada. Revisa tu correo para activarla.' };
-  const json = await request('registro_movil.php', { method: 'POST', body: data });
-  if (!json.status) throw new Error(json.message || 'No se pudo crear la cuenta');
+// Registro de nuevos usuarios
+export async function signup(formData) {
+  const json = await request('autenticator&action=registroApi', { 
+    method: 'POST', 
+    body: formData 
+  });
+  
+  if (!json.status) {
+    throw new Error(json.message || 'No se pudo crear la cuenta');
+  }
   return json;
 }
 
-// See php/recuperar_movil.php
+// Recuperación de contraseña
 export async function resetPassword(email) {
-  if (USE_MOCK) return { message: 'Te enviamos un enlace para restablecer tu contraseña.' };
-  const json = await request('recuperar_movil.php', { method: 'POST', body: { email } });
-  if (!json.status) throw new Error(json.message || 'No se pudo enviar el correo');
+  const json = await request('autenticator&action=recuperarApi', { 
+    method: 'POST', 
+    body: { email } 
+  });
+  
+  if (!json.status) {
+    throw new Error(json.message || 'No se pudo enviar el correo de recuperación');
+  }
   return json;
 }
