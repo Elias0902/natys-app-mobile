@@ -14,6 +14,10 @@ import ProveedorScreens from '../features/proveedores/screens/ProveedorScreens';
 import PedidoScreens from '../features/pedidos/screens/PedidoScreens';
 import ProductoScreens from '../features/productos/screens/ProductoScreens';
 import CompraScreens from '../features/compras/screens/CompraScreens';
+import EntregaScreens from '../features/entregas/screens/EntregaScreens';
+import PromocionScreens from '../features/promociones/screens/PromocionScreens';
+import PagoScreens from '../features/pagos/screens/PagoScreens';
+import NotificacionScreens from '../features/notificaciones/screens/NotificacionScreens';
 import CuentaCobrarScreens from '../features/cuentacobrar/screens/CuentaCobrarScreens';
 import CuentaPagarScreens from '../features/cuentapagar/screens/CuentaPagarScreens';
 
@@ -160,6 +164,14 @@ export default function AppNavigator() {
     content = <ProductoScreens onAdd={(p) => change(p, 1)} />;
   } else if (screen.key === 'compras') {
     content = <CompraScreens />; // <--- Pantalla real de Compras
+  } else if (screen.key === 'entregas') {
+    content = <EntregaScreens />;
+  } else if (screen.key === 'promociones') {
+    content = <PromocionScreens />;
+  } else if (screen.key === 'notificaciones') {
+    content = <NotificacionScreens />;
+  } else if (screen.key === 'pagos') {
+    content = <PagoScreens />;
   } else if (screen.key === 'cuentas_por_cobrar' || screen.key === 'cuentaporcobrar') {
     content = <CuentaCobrarScreens />; // <--- Pantalla real de Cuentas por Cobrar
   } else if (screen.key === 'cuentas_por_pagar' || screen.key === 'cuentaporpagar') {
