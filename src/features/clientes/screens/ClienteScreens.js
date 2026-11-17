@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Page, PageHeader } from '../../../components/Page';
 import SearchBar from '../../../components/SearchBar';
 import Pagination from '../../../components/Pagination';
-import { getClientes } from '../services/ClienteServices';
+import { getClientes, registrarCliente, modificarCliente, eliminarCliente } from '../services/ClienteServices';
 import ClienteTable from '../components/ClienteTable';
 import ClienteViewModal from '../components/ClienteViewModal';
 import ClienteCreateModal from '../components/ClienteCreateModal';
 import ClienteEditModal from '../components/ClienteEditModal';
+import CustomAlert from '../../../components/CustomAlert'; // <--- 1. Importa tu alerta personalizada
 import { colors } from '../../../utils/theme';
 import { useLayout } from '../../../utils/layout';
 
@@ -27,11 +28,103 @@ export default function ClienteScreens() {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
+  // Estados para la alerta personalizada (CustomAlert)
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ type: 'success', title: '', message: '' });
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [clienteAEliminar, setClienteAEliminar] = useState(null);
+
   const { isPhone } = useLayout();
 
+  const cargarClientes = async () => {
+    try {
+      setLoading(true);
+      const data = await getClientes();
+      setClientes(data);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    getClientes().then(setClientes).catch((e) => setError(e.message)).finally(() => setLoading(false));
+    cargarClientes();
   }, []);
+
+  // Función auxiliar para disparar la alerta personalizada fácilmente
+  const showAlertBox = (type, title, message) => {
+    setAlertConfig({ type, title, message });
+    setAlertVisible(true);
+  };
+
+  // Manejador de Registro
+  const handleCreateSubmit = async (formData) => {
+    try {
+      const response = await registrarCliente(formData);
+
+      if (response.status || response.success) {
+      showAlertBox('success', '¡Éxito!', 'Cliente registrado correctamente.');
+      setCreateModalVisible(false);
+      cargarClientes();
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo registrar el cliente.');
+        setCreateModalVisible(true);
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error', e.message);
+      setCreateModalVisible(true);
+    }
+  };
+
+  // Manejador de Modificación
+  const handleEditSubmit = async (formData) => {
+    try {
+      const response = await modificarCliente(formData);
+      
+      if (response.status || response.success) {
+        showAlertBox('success', '¡Actualizado!', response.msj || 'Cliente actualizado correctamente en el sistema.');
+        setEditModalVisible(false); 
+        cargarClientes(); 
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo actualizar el cliente.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+// Manejador de Eliminación con confirmación nativa y feedback con CustomAlert
+  const handleDelete = async (cliente) => {
+    const clienteId = cliente.id_cliente || cliente.id || cliente.rif;
+    const nombreCliente = cliente.nombre_cliente || cliente.nombre || 'Cliente';
+
+    if (!clienteId) {
+      showAlertBox('error', 'Error', 'No se pudo identificar el ID del cliente a eliminar.');
+      return;
+    }
+
+    // 1. Pide confirmación directamente antes de proceder
+    const confirmado = window.confirm(`¿Estás seguro de eliminar a ${nombreCliente}?`);
+    if (!confirmado) return;
+
+    try {
+      // 2. Ejecuta la petición de eliminación a la API
+      const response = await eliminarCliente(clienteId);
+
+      // 3. Muestra tu alerta personalizada de éxito o error según la respuesta
+      if (response.status || response.success) {
+        showAlertBox('success', '¡Eliminado!', response.msj || `Cliente ${nombreCliente} eliminado correctamente.`);
+        cargarClientes(); // Recarga la tabla de inmediato
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo eliminar el cliente.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
 
   // Filtrado
   const q = textoFiltrado.trim().toLowerCase();
@@ -80,7 +173,7 @@ export default function ClienteScreens() {
                 clientes={paginatedData} 
                 onView={(c) => { setSelectedCliente(c); setViewModalVisible(true); }}
                 onEdit={(c) => { setSelectedCliente(c); setEditModalVisible(true); }}
-                onDelete={(c) => alert(`Eliminar cliente: ${c.nombre_cliente}`)}
+                onDelete={handleDelete}
               />
             ) : <Text style={styles.noResults}>No se encontraron clientes.</Text>}
           </ScrollView>
@@ -96,10 +189,19 @@ export default function ClienteScreens() {
         </>
       )}
 
-      {/* Modales */}
+      {/* Modales del Módulo */}
       <ClienteViewModal visible={viewModalVisible} cliente={selectedCliente} onClose={() => setViewModalVisible(false)} />
-      <ClienteCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={(data) => console.log('Crear:', data)} />
-      <ClienteEditModal visible={editModalVisible} cliente={selectedCliente} onClose={() => setEditModalVisible(false)} onSubmit={(data) => console.log('Editar:', data)} />
+      <ClienteCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={handleCreateSubmit} />
+      <ClienteEditModal visible={editModalVisible} cliente={selectedCliente} onClose={() => setEditModalVisible(false)} onSubmit={handleEditSubmit} />
+
+      {/* 2. Componente de Alerta Estilo SweetAlert */}
+      <CustomAlert 
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertVisible(false)}
+      />
     </Page>
   );
 }

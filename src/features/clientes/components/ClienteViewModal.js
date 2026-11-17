@@ -32,7 +32,7 @@ export default function ClienteViewModal({ visible, cliente, onClose }) {
               </View>
               <Text style={styles.clientNameTitle}>{cliente.nombre_cliente}</Text>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{cliente.nombre_tipo_cliente}</Text>
+                <Text style={styles.badgeText}>{cliente.nombre_tipo_cliente || 'Cliente General'}</Text>
               </View>
             </View>
 
@@ -46,15 +46,21 @@ export default function ClienteViewModal({ visible, cliente, onClose }) {
             </View>
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>Correo Electrónico:</Text>
-              <Text style={styles.detailValue}>{cliente.email_cliente}</Text>
+              <Text style={styles.detailValue}>{cliente.email_cliente || 'No registrado'}</Text>
             </View>
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>Sector:</Text>
-              <Text style={styles.detailValue}>{cliente.sector}</Text>
+              <Text style={styles.detailValue}>{cliente.sector || 'No especificado'}</Text>
             </View>
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>Días de Crédito:</Text>
               <Text style={[styles.detailValue, { color: '#fbbf24', fontWeight: 'bold' }]}>{cliente.dias_credito} días</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Estado:</Text>
+              <Text style={[styles.detailValue, { color: cliente.estado_cliente === 'Activo' ? '#22c55e' : '#f87171', fontWeight: 'bold' }]}>
+                {cliente.estado_cliente}
+              </Text>
             </View>
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>Dirección:</Text>
@@ -62,7 +68,7 @@ export default function ClienteViewModal({ visible, cliente, onClose }) {
             </View>
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>Fecha de Registro:</Text>
-              <Text style={styles.detailValue}>{cliente.fecha_registro}</Text>
+              <Text style={styles.detailValue}>{cliente.fecha_registro || 'N/D'}</Text>
             </View>
           </ScrollView>
 

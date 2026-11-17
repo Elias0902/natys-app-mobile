@@ -43,13 +43,31 @@ export default function ClienteTable({ clientes, onView, onEdit, onDelete }) {
             <Text style={[styles.td, styles.colCredito, styles.textAccent]} numberOfLines={1}>{c.dias_credito} días</Text>
             
             <View style={[styles.td, styles.colActions, styles.actionsRow]}>
-              <TouchableOpacity style={[styles.actionBtn, styles.btnView]} onPress={() => onView && onView(c)}>
+              <TouchableOpacity 
+                style={[styles.actionBtn, styles.btnView]} 
+                onPress={() => {
+                  console.log("Ver presionado", c);
+                  onView && onView(c);
+                }}
+              >
                 <Text style={styles.actionText}>👁️</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.btnEdit]} onPress={() => onEdit && onEdit(c)}>
+              <TouchableOpacity 
+                style={[styles.actionBtn, styles.btnEdit]} 
+                onPress={() => {
+                  console.log("Editar presionado", c);
+                  onEdit && onEdit(c);
+                }}
+              >
                 <Text style={styles.actionText}>✏️</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.btnDelete]} onPress={() => onDelete && onDelete(c)}>
+              <TouchableOpacity 
+                style={[styles.actionBtn, styles.btnDelete]} 
+                onPress={() => {
+                  console.log("Eliminar presionado", c); // <-- Revisa si esto sale en tu consola al hacer clic
+                  onDelete && onDelete(c);
+                }}
+              >
                 <Text style={styles.actionText}>🗑️</Text>
               </TouchableOpacity>
             </View>
