@@ -3,11 +3,12 @@ import { StyleSheet, Text, View, ActivityIndicator, ScrollView, TouchableOpacity
 import { Page, PageHeader } from '../../../components/Page';
 import SearchBar from '../../../components/SearchBar';
 import Pagination from '../../../components/Pagination';
-import { getEntregas } from '../services/EntregaServices'; 
+import { getEntregas, registrarEntrega, modificarEntrega, eliminarEntrega } from '../services/EntregaServices';
 import EntregaTable from '../components/EntregaTable';
 import EntregaViewModal from '../components/EntregaViewModal';
 import EntregaCreateModal from '../components/EntregaCreateModal';
 import EntregaEditModal from '../components/EntregaEditModal';
+import CustomAlert from '../../../components/CustomAlert';
 import { colors } from '../../../utils/theme';
 import { useLayout } from '../../../utils/layout';
 
@@ -16,7 +17,7 @@ export default function EntregaScreens() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [textoFiltrado, setTextoFiltrado] = useState('');
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
@@ -27,23 +28,103 @@ export default function EntregaScreens() {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
+  // Estados para la alerta personalizada
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ type: 'success', title: '', message: '' });
+
   const { isPhone } = useLayout();
 
+  const cargarEntregas = async () => {
+    try {
+      setLoading(true);
+      const data = await getEntregas();
+      setEntregas(data);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Simulando servicio o llamando a tu función de API real
-    getEntregas()
-      .then((data) => setEntregas(data))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    // La carga inicial es una sincronización con la API; el estado se actualiza al resolver la petición.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarEntregas();
   }, []);
+
+  const showAlertBox = (type, title, message) => {
+    setAlertConfig({ type, title, message });
+    setAlertVisible(true);
+  };
+
+  // Manejador de Registro
+  const handleCreateSubmit = async (formData) => {
+    try {
+      const response = await registrarEntrega(formData);
+
+      if (response.status || response.success) {
+        setCreateModalVisible(false);
+        cargarEntregas();
+        showAlertBox('success', '¡Éxito!', response.msj || 'Entrega registrada correctamente.');
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo registrar la entrega.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+  // Manejador de Modificación
+  const handleEditSubmit = async (formData) => {
+    try {
+      const response = await modificarEntrega(formData);
+
+      if (response.status || response.success) {
+        setEditModalVisible(false);
+        cargarEntregas();
+        showAlertBox('success', '¡Actualizado!', response.msj || 'Entrega actualizada correctamente.');
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo actualizar la entrega.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+  // Manejador de Eliminación
+  const handleDelete = async (entrega) => {
+    const entregaId = entrega.id_entregas || entrega.id_entrega || entrega.id;
+
+    if (!entregaId) {
+      showAlertBox('error', 'Error', 'No se pudo identificar el ID de la entrega a eliminar.');
+      return;
+    }
+
+    const confirmado = window.confirm(`¿Estás seguro de eliminar la entrega #${entregaId}?`);
+    if (!confirmado) return;
+
+    try {
+      const response = await eliminarEntrega(entregaId);
+
+      if (response.status || response.success) {
+        cargarEntregas();
+        showAlertBox('success', '¡Eliminado!', response.msj || `Entrega #${entregaId} eliminada correctamente.`);
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo eliminar la entrega.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
 
   // Filtrado
   const q = textoFiltrado.trim().toLowerCase();
-  const filtered = entregas.filter(e => 
-    e.cliente_nombre.toLowerCase().includes(q) || 
-    e.camion_placa.toLowerCase().includes(q) || 
-    e.repartidor.toLowerCase().includes(q) ||
-    e.estado.toLowerCase().includes(q)
+  const filtered = entregas.filter(e =>
+    String(e.cliente_nombre ?? '').toLowerCase().includes(q) ||
+    String(e.camion_placa ?? '').toLowerCase().includes(q) ||
+    String(e.repartidor ?? '').toLowerCase().includes(q) ||
+    String(e.estado ?? '').toLowerCase().includes(q)
   );
 
   // Paginación dinámica
@@ -63,7 +144,7 @@ export default function EntregaScreens() {
   return (
     <Page>
       <PageHeader icon="truck" title="Gestión de Entregas" crumb="Inicio  ›  Entregas" />
-      
+
       <View style={[styles.toolbar, isPhone && styles.toolbarPhone]}>
         <View style={styles.leftTools}>
           <TouchableOpacity style={styles.btnNuevo} onPress={() => setCreateModalVisible(true)}>
@@ -81,16 +162,16 @@ export default function EntregaScreens() {
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.tableScroll}>
             {paginatedData.length > 0 ? (
-              <EntregaTable 
+              <EntregaTable
                 entregas={paginatedData}
                 onView={(e) => { setSelectedEntrega(e); setViewModalVisible(true); }}
                 onEdit={(e) => { setSelectedEntrega(e); setEditModalVisible(true); }}
-                onDelete={(e) => alert(`Eliminar entrega #${e.id_entregas}`)}
+                onDelete={handleDelete}
               />
             ) : <Text style={styles.noResults}>No se encontraron entregas.</Text>}
           </ScrollView>
 
-          <Pagination 
+          <Pagination
             page={currentPage}
             pages={totalPages}
             onPage={(p) => setCurrentPage(p)}
@@ -103,8 +184,22 @@ export default function EntregaScreens() {
 
       {/* Modales */}
       <EntregaViewModal visible={viewModalVisible} entrega={selectedEntrega} onClose={() => setViewModalVisible(false)} />
-      <EntregaCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={(data) => console.log('Crear Entrega:', data)} />
-      <EntregaEditModal visible={editModalVisible} entrega={selectedEntrega} onClose={() => setEditModalVisible(false)} onSubmit={(data) => console.log('Editar Entrega:', data)} />
+      <EntregaCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={handleCreateSubmit} />
+      <EntregaEditModal
+        key={editModalVisible ? selectedEntrega?.id_entregas ?? 'nuevo' : 'cerrado'}
+        visible={editModalVisible}
+        entrega={selectedEntrega}
+        onClose={() => setEditModalVisible(false)}
+        onSubmit={handleEditSubmit}
+      />
+
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertVisible(false)}
+      />
     </Page>
   );
 }

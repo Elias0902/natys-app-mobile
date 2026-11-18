@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import LoginScreen from '../features/auth/screens/LoginScreen';
 import EcommerceScreen from '../features/ecommerce/screens/EcommerceScreen';
 import CartScreen from '../features/ecommerce/screens/CartScreen';
+import HelpCenterScreen from '../features/ayuda/screens/HelpCenterScreen';
 import ProfileScreen from '../features/miperfil/screens/ProfileScreen';
 import InfoScreen from '../screens/InfoScreen';
 import NotFoundScreen from '../screens/NotFoundScreen';
@@ -107,7 +108,15 @@ export default function AppNavigator() {
     const h = d.getHours() % 12 || 12;
     setLastAccess(`${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(h)}:${p2(d.getMinutes())}:${p2(d.getSeconds())} ${d.getHours() >= 12 ? 'PM' : 'AM'}`);
     setScreen(byKey('ecommerce'));
-    getTasas().then(setTasas).catch(() => setTasas([]));
+
+    // Tasas reales del dólar: se recargan cada 5 minutos sin pedir permisos
+    // ni enviar el token del usuario a la API externa.
+    const cargarTasas = () => {
+      getTasas().then(setTasas).catch(() => {});
+    };
+    cargarTasas();
+    const temporizador = setInterval(cargarTasas, 5 * 60 * 1000);
+    return () => clearInterval(temporizador);
   }, [user]);
 
   const cartCount = Object.values(cart).reduce((a, i) => a + i.qty, 0);
@@ -124,7 +133,8 @@ export default function AppNavigator() {
   const checkout = async (contact) => {
     const items = Object.values(cart).map((i) => ({ id_producto: i.p.id_producto, cantidad: i.qty }));
     const r = await createOrder({ ...contact, items });
-    Alert.alert('Pedido registrado', r.message);
+    const folio = r.pedido_id ? `\nN° de pedido: ${r.pedido_id}` : '';
+    Alert.alert('Pedido registrado', `${r.msj || r.message || 'Tu pedido fue registrado.'}${folio}`);
     setCart({});
     setScreen(byKey('ecommerce'));
   };
@@ -176,6 +186,8 @@ export default function AppNavigator() {
     content = <CuentaCobrarScreens />; // <--- Pantalla real de Cuentas por Cobrar
   } else if (screen.key === 'cuentas_por_pagar' || screen.key === 'cuentaporpagar') {
     content = <CuentaPagarScreens />; // <--- Pantalla real de Cuentas por Pagar
+  } else if (screen.key === 'ayuda') {
+    content = <HelpCenterScreen />;
   } else if (screen.info) {
     content = <InfoScreen title={screen.label} text={screen.info} icon={screen.icon} />;
   } else {

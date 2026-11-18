@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import AppModal from '../../../components/AppModal';
 import FormField from '../../../components/FormField';
 import ActionButton from '../../../components/ActionButton';
+import { isDate, isEmail, isNonNegative, isPhone, isRif } from '../../../utils/validation';
 
 // "Registrar" (record = null) and "Modificar" (record = the row to edit)
 export default function RecordFormModal({ visible, config, record, moduleLabel, onClose, onSave }) {
@@ -34,8 +35,11 @@ export default function RecordFormModal({ visible, config, record, moduleLabel, 
     fields.forEach((f) => {
       const v = String(values[f.key] ?? '').trim();
       if (f.required && !v) e[f.key] = 'Campo obligatorio';
-      else if (v && f.type === 'number' && isNaN(Number(v))) e[f.key] = 'Debe ser un número';
-      else if (v && f.type === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(v) && !(isEdit && v === String(record[f.key]))) e[f.key] = 'Formato AAAA-MM-DD';
+      else if (v && f.type === 'number' && !isNonNegative(v)) e[f.key] = 'Debe ser un número mayor o igual a cero';
+      else if (v && f.type === 'date' && !isDate(v) && !(isEdit && v === String(record[f.key]))) e[f.key] = 'Formato AAAA-MM-DD';
+      else if (v && /email|correo/i.test(f.key) && !isEmail(v)) e[f.key] = 'Correo electrónico inválido';
+      else if (v && /tlf|telefono/i.test(f.key) && !isPhone(v)) e[f.key] = 'Teléfono inválido (ej: 04163213495)';
+      else if (v && /rif|cedula/i.test(f.key) && !isRif(v)) e[f.key] = 'Solo se permiten números';
     });
     setErrors(e);
     return Object.keys(e).length === 0;

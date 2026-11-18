@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { colors } from '../../../utils/theme';
+import { firstError, isBlank, isPassword } from '../../../utils/validation';
 
 export default function ChangePasswordModal({ visible, onClose, onSubmit }) {
   const [form, setForm] = useState({
@@ -14,14 +15,13 @@ export default function ChangePasswordModal({ visible, onClose, onSubmit }) {
   };
 
   const handleSave = () => {
-    if (!form.password_actual || !form.password_nueva || !form.password_repetir) {
-      alert('Por favor completa todos los campos.');
-      return;
-    }
-    if (form.password_nueva !== form.password_repetir) {
-      alert('Las contraseñas nuevas no coinciden.');
-      return;
-    }
+    const error = firstError([
+      [isBlank(form.password_actual), 'Ingresa tu contraseña actual.'],
+      [isBlank(form.password_nueva) || isBlank(form.password_repetir), 'Ingresa y repite la contraseña nueva.'],
+      [!isPassword(form.password_nueva), 'La contraseña debe tener de 6 a 11 caracteres, una mayúscula y un punto. Ej: Natys12.'],
+      [form.password_nueva !== form.password_repetir, 'Las contraseñas nuevas no coinciden.'],
+    ]);
+    if (error) { alert(error); return; }
     onSubmit(form);
     onClose();
   };

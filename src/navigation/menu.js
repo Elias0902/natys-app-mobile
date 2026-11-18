@@ -27,7 +27,7 @@ export const MENU = [
   group('Configuración', 'sliders', [
     { key: 'notificaciones', label: 'Notificaciones', modulo: 'notificaciones' },
   ]),
-  { key: 'ayuda', label: 'Centro de Ayuda', icon: 'help', info: 'Soporte: galletasnatys@gmail.com · +58 424 521 7016' },
+  { key: 'ayuda', label: 'Centro de Ayuda', icon: 'help' },
 ];
 
 export const FLAT = MENU.flatMap((m) => (m.children ? m.children : [m]));

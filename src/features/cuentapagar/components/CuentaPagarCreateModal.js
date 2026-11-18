@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { colors } from '../../../utils/theme';
+import { firstError, inList, isBlank, isDate, isInteger, isNonNegative } from '../../../utils/validation';
 
 export default function CuentaPagarCreateModal({ visible, onClose, onSubmit }) {
   const [form, setForm] = useState({
@@ -18,10 +19,18 @@ export default function CuentaPagarCreateModal({ visible, onClose, onSubmit }) {
   };
 
   const handleSave = () => {
-    if (!form.id_compra || !form.id_proveedor || !form.monto_total) {
-      alert('Por favor completa los campos obligatorios.');
-      return;
-    }
+    const error = firstError([
+      [!isInteger(form.id_compra), 'El ID de la compra debe ser un número entero.'],
+      [!isInteger(form.id_proveedor), 'El ID del proveedor debe ser un número entero.'],
+      [isBlank(form.monto_total), 'El monto total es obligatorio (*).'],
+      [!isBlank(form.monto_total) && !isNonNegative(form.monto_total), 'El monto total debe ser un número mayor o igual a cero.'],
+      [!isBlank(form.saldo_pendiente) && !isNonNegative(form.saldo_pendiente), 'El saldo pendiente debe ser un número mayor o igual a cero.'],
+      [!isBlank(form.fecha_emision) && !isDate(form.fecha_emision), 'La fecha de emisión no tiene un formato válido.'],
+      [!isBlank(form.fecha_vencimiento) && !isDate(form.fecha_vencimiento), 'La fecha de vencimiento no tiene un formato válido.'],
+      [!isBlank(form.fecha_emision) && !isBlank(form.fecha_vencimiento) && form.fecha_vencimiento < form.fecha_emision, 'La fecha de vencimiento no puede ser anterior a la de emisión.'],
+      [!inList(form.estado_pago, ['Por Pagar', 'Pagado', 'Anulado']), 'Selecciona un estado de pago válido.'],
+    ]);
+    if (error) { alert(error); return; }
     onSubmit(form);
     onClose();
   };

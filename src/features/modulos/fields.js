@@ -76,10 +76,13 @@ export const FIELDS = {
   },
   notificaciones: {
     singular: 'Notificación',
-    id: 'id',
+    id: 'id_notificaciones',
     fields: [
-      { key: 'mensaje', label: 'Mensaje', required: true },
-      { key: 'fecha', label: 'Fecha', type: 'date', required: true },
+      { key: 'titulo', label: 'Título', required: true },
+      { key: 'descripcion_notificacion', label: 'Descripción', required: true },
+      { key: 'fecha_notificacion', label: 'Fecha', type: 'date', required: true },
+      { key: 'tipo_notificacion', label: 'Tipo', type: 'select', options: ['general', 'alerta'] },
+      { key: 'alcance', label: 'Alcance', type: 'select', options: ['especifica', 'global'] },
     ],
   },
 };

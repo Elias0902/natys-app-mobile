@@ -20,30 +20,42 @@ export default function PagoScreens() {
   const [error, setError] = useState('');
   const [subTab, setSubTab] = useState('clientes');
   const [textoFiltrado, setTextoFiltrado] = useState('');
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
 
-  // Modal Ver
+  // Solo consulta: no hay formulario de registro ni edición de pagos aquí.
   const [selectedPago, setSelectedPago] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
 
   const { isPhone } = useLayout();
 
+  const cargarPagos = async () => {
+    try {
+      setLoading(true);
+      const data = await getPagos();
+      setPagosData(data);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    getPagos()
-      .then(setPagosData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    // La carga inicial es una sincronización con la API; el estado se actualiza al resolver la petición.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarPagos();
   }, []);
 
   const currentList = subTab === 'clientes' ? pagosData.clientes : pagosData.proveedores;
   const q = textoFiltrado.trim().toLowerCase();
-  const filtered = currentList.filter(item => 
-    item.nombre.toLowerCase().includes(q) || 
-    String(item.nro_referencia).includes(q) ||
-    item.concepto.toLowerCase().includes(q)
+  const filtered = currentList.filter(item =>
+    String(item.nombre ?? '').toLowerCase().includes(q) ||
+    String(item.nro_referencia ?? '').includes(q) ||
+    String(item.concepto ?? '').toLowerCase().includes(q)
   );
 
   const totalPages = Math.ceil(filtered.length / recordsPerPage);
@@ -68,7 +80,7 @@ export default function PagoScreens() {
   return (
     <Page>
       <PageHeader icon="credit-card" title="Gestión de Pagos" crumb="Inicio  ›  Pagos" />
-      
+
       {/* Pestañas internas para Clientes y Proveedores */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs} contentContainerStyle={styles.tabsInner}>
         {TABS.map((t) => (
@@ -90,14 +102,14 @@ export default function PagoScreens() {
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.tableScroll}>
             {paginatedData.length > 0 ? (
-              <PagoTable 
+              <PagoTable
                 pagos={paginatedData}
                 onView={(item) => { setSelectedPago(item); setViewModalVisible(true); }}
               />
             ) : <Text style={styles.noResults}>No se encontraron registros de pago.</Text>}
           </ScrollView>
 
-          <Pagination 
+          <Pagination
             page={currentPage}
             pages={totalPages}
             onPage={(p) => setCurrentPage(p)}
@@ -108,11 +120,10 @@ export default function PagoScreens() {
         </>
       )}
 
-      {/* Modal Componentizado */}
-      <PagoViewModal 
-        visible={viewModalVisible} 
-        pago={selectedPago} 
-        onClose={() => setViewModalVisible(false)} 
+      <PagoViewModal
+        visible={viewModalVisible}
+        pago={selectedPago}
+        onClose={() => setViewModalVisible(false)}
       />
     </Page>
   );
@@ -124,9 +135,9 @@ const styles = StyleSheet.create({
   tab: { borderColor: colors.border, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#0f172a' },
   tabOn: { backgroundColor: colors.red, borderColor: colors.red },
   tabText: { color: colors.muted, fontWeight: '700', fontSize: 13 },
-  toolbar: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 16 },
+  toolbar: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
   toolbarPhone: { marginBottom: 12 },
-  searchWide: { width: 300, maxWidth: '100%', backgroundColor: colors.card },
+  searchWide: { flex: 1, maxWidth: 480, backgroundColor: colors.card },
   searchPhone: { flex: 1, backgroundColor: colors.card },
   tableScroll: { width: '100%' },
   loading: { marginVertical: 40 },

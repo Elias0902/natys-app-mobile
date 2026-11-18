@@ -3,11 +3,12 @@ import { StyleSheet, Text, View, ActivityIndicator, ScrollView, TouchableOpacity
 import { Page, PageHeader } from '../../../components/Page';
 import SearchBar from '../../../components/SearchBar';
 import Pagination from '../../../components/Pagination';
-import { getCompras } from '../services/CompraServices';
+import { getCompras, registrarCompra, modificarCompra, eliminarCompra } from '../services/CompraServices';
 import CompraTable from '../components/CompraTable';
 import CompraViewModal from '../components/CompraViewModal';
 import CompraCreateModal from '../components/CompraCreateModal';
 import CompraEditModal from '../components/CompraEditModal';
+import CustomAlert from '../../../components/CustomAlert';
 import { colors } from '../../../utils/theme';
 import { useLayout } from '../../../utils/layout';
 
@@ -16,7 +17,7 @@ export default function CompraScreens() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [textoFiltrado, setTextoFiltrado] = useState('');
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
@@ -27,19 +28,103 @@ export default function CompraScreens() {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
+  // Estados para la alerta personalizada
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ type: 'success', title: '', message: '' });
+
   const { isPhone } = useLayout();
 
+  const cargarCompras = async () => {
+    try {
+      setLoading(true);
+      const data = await getCompras();
+      setCompras(data);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    getCompras().then(setCompras).catch((e) => setError(e.message)).finally(() => setLoading(false));
+    // La carga inicial es una sincronización con la API; el estado se actualiza al resolver la petición.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarCompras();
   }, []);
+
+  const showAlertBox = (type, title, message) => {
+    setAlertConfig({ type, title, message });
+    setAlertVisible(true);
+  };
+
+  // Manejador de Registro
+  const handleCreateSubmit = async (formData) => {
+    try {
+      const response = await registrarCompra(formData);
+
+      if (response.status || response.success) {
+        setCreateModalVisible(false);
+        cargarCompras();
+        showAlertBox('success', '¡Éxito!', response.msj || 'Compra registrada correctamente.');
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo registrar la compra.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+  // Manejador de Modificación
+  const handleEditSubmit = async (formData) => {
+    try {
+      const response = await modificarCompra(formData);
+
+      if (response.status || response.success) {
+        setEditModalVisible(false);
+        cargarCompras();
+        showAlertBox('success', '¡Actualizado!', response.msj || 'Compra actualizada correctamente.');
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo actualizar la compra.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+  // Manejador de Eliminación
+  const handleDelete = async (compra) => {
+    const compraId = compra.id_compra || compra.id;
+
+    if (!compraId) {
+      showAlertBox('error', 'Error', 'No se pudo identificar el ID de la compra a eliminar.');
+      return;
+    }
+
+    const confirmado = window.confirm(`¿Estás seguro de eliminar la compra #${compraId}?`);
+    if (!confirmado) return;
+
+    try {
+      const response = await eliminarCompra(compraId);
+
+      if (response.status || response.success) {
+        cargarCompras();
+        showAlertBox('success', '¡Eliminado!', response.msj || `Compra #${compraId} eliminada correctamente.`);
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo eliminar la compra.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
 
   // Filtrado por proveedor, materia prima o estado de pago
   const q = textoFiltrado.trim().toLowerCase();
-  const filtered = compras.filter(c => 
-    c.nombre_proveedor.toLowerCase().includes(q) || 
-    (c.materiaPrima && c.materiaPrima.toLowerCase().includes(q)) ||
-    c.pago.toLowerCase().includes(q) ||
-    String(c.id_compra).includes(q)
+  const filtered = compras.filter(c =>
+    String(c.nombre_proveedor ?? '').toLowerCase().includes(q) ||
+    String(c.materiaPrima ?? '').toLowerCase().includes(q) ||
+    String(c.pago ?? '').toLowerCase().includes(q) ||
+    String(c.id_compra ?? '').includes(q)
   );
 
   // Paginación dinámica
@@ -59,7 +144,7 @@ export default function CompraScreens() {
   return (
     <Page>
       <PageHeader icon="shopping-cart" title="Gestión de Compras" crumb="Inicio  ›  Compras" />
-      
+
       <View style={[styles.toolbar, isPhone && styles.toolbarPhone]}>
         <View style={styles.leftTools}>
           <TouchableOpacity style={styles.btnNuevo} onPress={() => setCreateModalVisible(true)}>
@@ -77,16 +162,16 @@ export default function CompraScreens() {
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.tableScroll}>
             {paginatedData.length > 0 ? (
-              <CompraTable 
-                compras={paginatedData} 
+              <CompraTable
+                compras={paginatedData}
                 onView={(c) => { setSelectedCompra(c); setViewModalVisible(true); }}
                 onEdit={(c) => { setSelectedCompra(c); setEditModalVisible(true); }}
-                onDelete={(c) => alert(`Eliminar compra: #${c.id_compra}`)}
+                onDelete={handleDelete}
               />
             ) : <Text style={styles.noResults}>No se encontraron compras.</Text>}
           </ScrollView>
 
-          <Pagination 
+          <Pagination
             page={currentPage}
             pages={totalPages}
             onPage={(p) => setCurrentPage(p)}
@@ -99,8 +184,22 @@ export default function CompraScreens() {
 
       {/* Modales */}
       <CompraViewModal visible={viewModalVisible} compra={selectedCompra} onClose={() => setViewModalVisible(false)} />
-      <CompraCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={(data) => console.log('Crear Compra:', data)} />
-      <CompraEditModal visible={editModalVisible} compra={selectedCompra} onClose={() => setEditModalVisible(false)} onSubmit={(data) => console.log('Editar Compra:', data)} />
+      <CompraCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={handleCreateSubmit} />
+      <CompraEditModal
+        key={editModalVisible ? selectedCompra?.id_compra ?? 'nuevo' : 'cerrado'}
+        visible={editModalVisible}
+        compra={selectedCompra}
+        onClose={() => setEditModalVisible(false)}
+        onSubmit={handleEditSubmit}
+      />
+
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertVisible(false)}
+      />
     </Page>
   );
 }

@@ -3,11 +3,12 @@ import { StyleSheet, Text, View, ActivityIndicator, ScrollView, TouchableOpacity
 import { Page, PageHeader } from '../../../components/Page';
 import SearchBar from '../../../components/SearchBar';
 import Pagination from '../../../components/Pagination';
-import { getProductos } from '../services/ProductoServices';
+import { getProductos, registrarProducto, modificarProducto, eliminarProducto } from '../services/ProductoServices';
 import ProductoTable from '../components/ProductoTable';
 import ProductoViewModal from '../components/ProductoViewModal';
 import ProductoCreateModal from '../components/ProductoCreateModal';
 import ProductoEditModal from '../components/ProductoEditModal';
+import CustomAlert from '../../../components/CustomAlert';
 import { colors } from '../../../utils/theme';
 import { useLayout } from '../../../utils/layout';
 
@@ -16,7 +17,7 @@ export default function ProductoScreens({ onAdd }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [textoFiltrado, setTextoFiltrado] = useState('');
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
@@ -27,17 +28,102 @@ export default function ProductoScreens({ onAdd }) {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
+  // Estados para la alerta personalizada
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ type: 'success', title: '', message: '' });
+
   const { isPhone } = useLayout();
 
+  const cargarProductos = async () => {
+    try {
+      setLoading(true);
+      const data = await getProductos();
+      setProductos(data.productos);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    getProductos().then((data) => setProductos(data.productos)).catch((e) => setError(e.message)).finally(() => setLoading(false));
+    // La carga inicial es una sincronización con la API; el estado se actualiza al resolver la petición.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarProductos();
   }, []);
+
+  const showAlertBox = (type, title, message) => {
+    setAlertConfig({ type, title, message });
+    setAlertVisible(true);
+  };
+
+  // Manejador de Registro
+  const handleCreateSubmit = async (formData) => {
+    try {
+      const response = await registrarProducto(formData);
+
+      if (response.status || response.success) {
+        setCreateModalVisible(false);
+        cargarProductos();
+        showAlertBox('success', '¡Éxito!', response.msj || 'Producto registrado correctamente.');
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo registrar el producto.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+  // Manejador de Modificación
+  const handleEditSubmit = async (formData) => {
+    try {
+      const response = await modificarProducto(formData);
+
+      if (response.status || response.success) {
+        setEditModalVisible(false);
+        cargarProductos();
+        showAlertBox('success', '¡Actualizado!', response.msj || 'Producto actualizado correctamente.');
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo actualizar el producto.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+  // Manejador de Eliminación
+  const handleDelete = async (producto) => {
+    const productoId = producto.id_producto || producto.id;
+    const nombreProducto = producto.nombre_producto || 'Producto';
+
+    if (!productoId) {
+      showAlertBox('error', 'Error', 'No se pudo identificar el ID del producto a eliminar.');
+      return;
+    }
+
+    const confirmado = window.confirm(`¿Estás seguro de eliminar el producto ${nombreProducto}?`);
+    if (!confirmado) return;
+
+    try {
+      const response = await eliminarProducto(productoId);
+
+      if (response.status || response.success) {
+        cargarProductos();
+        showAlertBox('success', '¡Eliminado!', response.msj || `Producto ${nombreProducto} eliminado correctamente.`);
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo eliminar el producto.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
 
   // Filtrado
   const q = textoFiltrado.trim().toLowerCase();
-  const filtered = productos.filter(p => 
-    p.nombre_producto.toLowerCase().includes(q) || 
-    p.nombre_categoria.toLowerCase().includes(q)
+  const filtered = productos.filter(p =>
+    String(p.nombre_producto ?? '').toLowerCase().includes(q) ||
+    String(p.nombre_categoria ?? '').toLowerCase().includes(q)
   );
 
   // Paginación dinámica
@@ -57,7 +143,7 @@ export default function ProductoScreens({ onAdd }) {
   return (
     <Page>
       <PageHeader icon="tag" title="Gestión de Productos" crumb="Inicio  ›  Productos" />
-      
+
       <View style={[styles.toolbar, isPhone && styles.toolbarPhone]}>
         <View style={styles.leftTools}>
           <TouchableOpacity style={styles.btnNuevo} onPress={() => setCreateModalVisible(true)}>
@@ -75,17 +161,17 @@ export default function ProductoScreens({ onAdd }) {
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.tableScroll}>
             {paginatedData.length > 0 ? (
-              <ProductoTable 
-                productos={paginatedData} 
+              <ProductoTable
+                productos={paginatedData}
                 onAdd={onAdd}
                 onView={(p) => { setSelectedProducto(p); setViewModalVisible(true); }}
                 onEdit={(p) => { setSelectedProducto(p); setEditModalVisible(true); }}
-                onDelete={(p) => alert(`Eliminar producto: ${p.nombre_producto}`)}
+                onDelete={handleDelete}
               />
             ) : <Text style={styles.noResults}>No se encontraron productos.</Text>}
           </ScrollView>
 
-          <Pagination 
+          <Pagination
             page={currentPage}
             pages={totalPages}
             onPage={(p) => setCurrentPage(p)}
@@ -98,8 +184,16 @@ export default function ProductoScreens({ onAdd }) {
 
       {/* Modales */}
       <ProductoViewModal visible={viewModalVisible} producto={selectedProducto} onClose={() => setViewModalVisible(false)} />
-      <ProductoCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={(data) => console.log('Crear:', data)} />
-      <ProductoEditModal visible={editModalVisible} producto={selectedProducto} onClose={() => setEditModalVisible(false)} onSubmit={(data) => console.log('Editar:', data)} />
+      <ProductoCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={handleCreateSubmit} />
+      <ProductoEditModal visible={editModalVisible} producto={selectedProducto} onClose={() => setEditModalVisible(false)} onSubmit={handleEditSubmit} />
+
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertVisible(false)}
+      />
     </Page>
   );
 }

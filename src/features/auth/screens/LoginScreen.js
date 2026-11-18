@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import { login, signup, resetPassword } from '../services/authApi';
 import { LANDING_URL } from '../../../utils/config';
 import { colors } from '../../../utils/theme';
+import { digitsOnly, inList, isBlank, isEmail, isPassword, isPhone, isRif, isUsername, lengthBetween } from '../../../utils/validation';
 import LoginIllustration from '../components/LoginIllustration';
 
 // Three views: login | signup | reset. On wide screens the illustration and the form swap sides.
@@ -39,11 +40,17 @@ function Choice({ options, value, onChange }) {
 
 // Same rules as the backend (models/Autenticator.php)
 function signupError(f) {
-  if (!f.username || !f.email || !f.password || !f.rif || !f.nombre || !f.tlf || !f.direccion || !f.sector) return 'Todos los campos son obligatorios.';
-  if (!/^[a-zA-Z0-9@_]{5,20}$/.test(f.username.trim())) return 'El usuario debe tener de 5 a 20 caracteres: letras, números, @ o _.';
-  if (!/^(?=.*[A-Z])(?=.*\.)[a-zA-Z0-9.]{6,11}$/.test(f.password)) return 'La contraseña debe tener de 6 a 11 caracteres, una mayúscula y un punto. Ej: Natys12.';
+  if (['username', 'email', 'password', 'confirm', 'rif', 'nombre', 'tlf', 'direccion', 'sector'].some((key) => isBlank(f[key]))) return 'Todos los campos son obligatorios.';
+  if (!isUsername(f.username)) return 'El usuario debe tener de 5 a 20 caracteres: letras, números, @ o _.';
+  if (!isEmail(f.email)) return 'Ingresa un correo electrónico válido.';
+  if (!isPassword(f.password)) return 'La contraseña debe tener de 6 a 11 caracteres, una mayúscula y un punto. Ej: Natys12.';
   if (f.password !== f.confirm) return 'Las contraseñas no coinciden.';
-  if (!/^\d+$/.test(f.rif.trim())) return 'La cédula o RIF solo debe tener números.';
+  if (!isRif(f.rif)) return 'La cédula o RIF solo debe tener números.';
+  if (!inList(f.tipo_id, ['V', 'J', 'G', 'E'])) return 'Selecciona un tipo de documento válido.';
+  if (!lengthBetween(f.nombre, 2, 100)) return 'El nombre debe tener entre 2 y 100 caracteres.';
+  if (!isPhone(f.tlf)) return 'Ingresa un teléfono válido de 11 dígitos (ej: 04163213495).';
+  if (!lengthBetween(f.direccion, 5, 200)) return 'La dirección debe tener entre 5 y 200 caracteres.';
+  if (!inList(f.sector, ['Norte', 'Sur', 'Este', 'Oeste'])) return 'Selecciona un sector válido.';
   return '';
 }
 
@@ -87,11 +94,12 @@ export default function LoginScreen({ notice = '', onLogin }) {
         if (invalid) return setError(invalid);
         setLoading(true);
         const { confirm, ...data } = form;
-        const r = await signup({ ...data, username: form.username.trim(), email: form.email.trim(), rif: form.rif.trim(), nombre: form.nombre.trim(), tlf: form.tlf.trim(), direccion: form.direccion.trim() });
+        const r = await signup({ ...data, username: form.username.trim(), email: form.email.trim(), rif: form.rif.trim(), nombre: form.nombre.trim(), tlf: digitsOnly(form.tlf), direccion: form.direccion.trim() });
         go('login'); // go() clears the messages, so the success text goes after it
         setInfo(r.message);
       } else {
-        if (!form.email) return setError('Ingresa tu correo.');
+        if (isBlank(form.email)) return setError('Ingresa tu correo.');
+        if (!isEmail(form.email)) return setError('Ingresa un correo electrónico válido.');
         setLoading(true);
         const r = await resetPassword(form.email.trim());
         setInfo(r.message);

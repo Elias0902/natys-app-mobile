@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../../utils/theme';
+import { digitsOnly, firstError, isBlank, isEmail, isInteger, isPhone, isRif, inList, lengthBetween } from '../../../utils/validation';
 import { getTiposCliente } from '../services/ClienteServices';
 
 export default function ClienteCreateModal({ visible, onClose, onSubmit }) {
@@ -64,11 +65,26 @@ export default function ClienteCreateModal({ visible, onClose, onSubmit }) {
   };
 
   const handleSave = () => {
-    if (!form.id_cliente || !form.nombre_cliente || !form.tlf_cliente) {
-      alert('Por favor completa los campos obligatorios (*).');
-      return;
-    }
-    onSubmit(form);
+    const error = firstError([
+      [isBlank(form.id_cliente), 'La cédula o RIF es obligatoria (*).'],
+      [!isBlank(form.id_cliente) && !isRif(digitsOnly(form.id_cliente)), 'La cédula o RIF solo debe tener números.'],
+      [isBlank(form.nombre_cliente), 'El nombre del cliente es obligatorio (*).'],
+      [!isBlank(form.nombre_cliente) && !lengthBetween(form.nombre_cliente, 2, 100), 'El nombre debe tener entre 2 y 100 caracteres.'],
+      [isBlank(form.tlf_cliente), 'El teléfono es obligatorio (*).'],
+      [!isBlank(form.tlf_cliente) && !isPhone(form.tlf_cliente), 'Ingresa un teléfono válido de 11 dígitos (ej: 04163213495).'],
+      [!isBlank(form.email_cliente) && !isEmail(form.email_cliente), 'Ingresa un correo electrónico válido.'],
+      [!isBlank(form.direccion_cliente) && !lengthBetween(form.direccion_cliente, 5, 200), 'La dirección debe tener entre 5 y 200 caracteres.'],
+      [!inList(String(form.tipo_id ?? '').trim().charAt(0), ['V', 'E', 'J', 'G', 'C']), 'Selecciona un tipo de documento válido.'],
+      [isBlank(form.sector), 'Selecciona un sector.'],
+      [!isInteger(form.dias_credito), 'Los días de crédito deben ser un número entero mayor o igual a cero.'],
+    ]);
+    if (error) { alert(error); return; }
+    onSubmit({
+      ...form,
+      id_cliente: digitsOnly(form.id_cliente),
+      tlf_cliente: digitsOnly(form.tlf_cliente),
+      tipo_id: String(form.tipo_id ?? '').trim().charAt(0),
+    });
     onClose();
   };
 

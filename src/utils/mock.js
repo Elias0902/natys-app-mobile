@@ -37,7 +37,10 @@ export const MOCK = {
   cobrar: [{ id_cuenta: 1, cliente: 'Mi Super ca', monto: 350, estado: 'Por Cobrar' }],
   pagar: [{ id_cuenta: 1, proveedor: 'Proveedor Demo', monto: 3.5, estado: 'Por Pagar' }],
   tipos_clientes: [{ id: 1, nombre: 'Bodegas' }, { id: 2, nombre: 'Distribuidores' }, { id: 3, nombre: 'Sucursales' }],
-  notificaciones: [{ id: 1, mensaje: 'Nuevo pedido registrado', fecha: '2026-10-20' }],
+  notificaciones: [
+    { id_notificaciones: 1, titulo: 'Nuevo pedido registrado', descripcion_notificacion: 'Se registró un pedido en el sistema.', fecha_notificacion: '2026-10-20 10:30:00', tipo_notificacion: 'general', alcance: 'especifica', visto: 1 },
+    { id_notificaciones: 2, titulo: 'Mantenimiento programado', descripcion_notificacion: 'El sistema estará en mantenimiento esta noche.', fecha_notificacion: '2026-10-21 08:00:00', tipo_notificacion: 'alerta', alcance: 'global', visto: 0 },
+  ],
   tasa: [{ id: 1, nombre: 'USDT', valor: '1005.65 Bs/$' }, { id: 2, nombre: 'BCV', valor: '881.88 Bs/$' }],
   moneda: [{ id: 1, nombre: 'Dólar', simbolo: '$' }, { id: 2, nombre: 'Bolívar', simbolo: 'Bs' }],
   unidades: [{ id: 1, nombre: 'Kilogramo', abreviatura: 'kg' }],

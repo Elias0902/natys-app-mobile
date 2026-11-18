@@ -46,6 +46,8 @@ const styles = StyleSheet.create({
   block: { flex: 1 },
   primary: { backgroundColor: colors.red, borderColor: colors.red },
   danger: { backgroundColor: colors.danger, borderColor: colors.redSoft },
+  success: { backgroundColor: colors.green, borderColor: colors.green },
+  info: { backgroundColor: '#1d4ed8', borderColor: '#1d4ed8' },
   outline: { backgroundColor: 'transparent', borderColor: colors.border },
   disabled: { opacity: 0.5 },
   text: { fontWeight: '700', fontSize: 12 },

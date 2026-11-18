@@ -12,6 +12,18 @@ export async function getClientes() {
   return res.data || [];
 }
 
+// Catálogo ligero de clientes activos para selectors
+export async function getClientesSelect() {
+  const response = await request('clientes&action=obtenerClientesSelect', { method: 'GET' });
+  const res = Array.isArray(response) ? response[0] : response;
+
+  if (!res || !res.status) {
+    throw new Error(res?.msj || 'No se pudieron cargar los clientes');
+  }
+
+  return res.data || [];
+}
+
 // Consultar los tipos de cliente para los selectores
 export async function getTiposCliente() {
   // Ajusta el endpoint según la ruta de tu API para tipos de cliente

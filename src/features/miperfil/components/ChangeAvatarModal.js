@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { colors } from '../../../utils/theme';
+import { firstError, isBlank } from '../../../utils/validation';
 
 export default function ChangeAvatarModal({ visible, onClose, onSubmit }) {
   const [imageUrl, setImageUrl] = useState('');
 
   const handleSave = () => {
-    if (!imageUrl.trim()) {
-      alert('Por favor ingresa una ruta o URL válida para la imagen.');
-      return;
-    }
-    onSubmit(imageUrl);
+    const value = imageUrl.trim();
+    const esImagen = /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(value)
+      || /^(https?:\/\/|\.?\/?[\w-]+\/)*[\w-]+\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(value);
+    const error = firstError([
+      [isBlank(value), 'Por favor ingresa una ruta o URL válida para la imagen.'],
+      [!isBlank(value) && !esImagen, 'La imagen debe ser JPG, PNG, GIF o WEBP (URL, ruta o base64).'],
+    ]);
+    if (error) { alert(error); return; }
+    onSubmit(value);
     onClose();
   };
 

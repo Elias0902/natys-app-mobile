@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { colors } from '../../../utils/theme';
+import { digitsOnly, firstError, isBlank, isEmail, isPhone, isRif, inList, lengthBetween } from '../../../utils/validation';
 
 export default function ProveedorCreateModal({ visible, onClose, onSubmit }) {
   const [form, setForm] = useState({
@@ -17,11 +18,24 @@ export default function ProveedorCreateModal({ visible, onClose, onSubmit }) {
   };
 
   const handleSave = () => {
-    if (!form.id_proveedor || !form.nombre_proveedor || !form.tlf_proveedor) {
-      alert('Por favor completa los campos obligatorios.');
-      return;
-    }
-    onSubmit(form);
+    const error = firstError([
+      [isBlank(form.id_proveedor), 'El RIF del proveedor es obligatorio (*).'],
+      [!isBlank(form.id_proveedor) && !isRif(digitsOnly(form.id_proveedor)), 'El RIF solo debe tener números.'],
+      [!inList(String(form.tipo_id ?? '').trim().charAt(0), ['V', 'E', 'J', 'G', 'C']), 'Selecciona un tipo de RIF válido.'],
+      [isBlank(form.nombre_proveedor), 'El nombre del proveedor es obligatorio (*).'],
+      [!isBlank(form.nombre_proveedor) && !lengthBetween(form.nombre_proveedor, 2, 100), 'El nombre debe tener entre 2 y 100 caracteres.'],
+      [isBlank(form.tlf_proveedor), 'El teléfono es obligatorio (*).'],
+      [!isBlank(form.tlf_proveedor) && !isPhone(form.tlf_proveedor), 'Ingresa un teléfono válido de 11 dígitos (ej: 04163213495).'],
+      [!isBlank(form.email_proveedor) && !isEmail(form.email_proveedor), 'Ingresa un correo electrónico válido.'],
+      [!isBlank(form.direccion_proveedor) && !lengthBetween(form.direccion_proveedor, 5, 200), 'La dirección debe tener entre 5 y 200 caracteres.'],
+    ]);
+    if (error) { alert(error); return; }
+    onSubmit({
+      ...form,
+      id_proveedor: digitsOnly(form.id_proveedor),
+      tlf_proveedor: digitsOnly(form.tlf_proveedor),
+      tipo_id: String(form.tipo_id ?? '').trim().charAt(0),
+    });
     onClose();
   };
 

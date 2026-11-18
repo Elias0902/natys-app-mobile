@@ -3,11 +3,12 @@ import { StyleSheet, Text, View, ActivityIndicator, ScrollView, TouchableOpacity
 import { Page, PageHeader } from '../../../components/Page';
 import SearchBar from '../../../components/SearchBar';
 import Pagination from '../../../components/Pagination';
-import { getPedidos } from '../services/PedidoServices';
+import { getPedidos, registrarPedido, modificarPedido, eliminarPedido } from '../services/PedidoServices';
 import PedidoTable from '../components/PedidoTable';
 import PedidoViewModal from '../components/PedidoViewModal';
 import PedidoCreateModal from '../components/PedidoCreateModal';
 import PedidoEditModal from '../components/PedidoEditModal';
+import CustomAlert from '../../../components/CustomAlert';
 import { colors } from '../../../utils/theme';
 import { useLayout } from '../../../utils/layout';
 
@@ -16,7 +17,7 @@ export default function PedidoScreens() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [textoFiltrado, setTextoFiltrado] = useState('');
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
@@ -27,19 +28,103 @@ export default function PedidoScreens() {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
+  // Estados para la alerta personalizada
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ type: 'success', title: '', message: '' });
+
   const { isPhone } = useLayout();
 
+  const cargarPedidos = async () => {
+    try {
+      setLoading(true);
+      const data = await getPedidos();
+      setPedidos(data);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    getPedidos().then(setPedidos).catch((e) => setError(e.message)).finally(() => setLoading(false));
+    // La carga inicial es una sincronización con la API; el estado se actualiza al resolver la petición.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarPedidos();
   }, []);
+
+  const showAlertBox = (type, title, message) => {
+    setAlertConfig({ type, title, message });
+    setAlertVisible(true);
+  };
+
+  // Manejador de Registro
+  const handleCreateSubmit = async (formData) => {
+    try {
+      const response = await registrarPedido(formData);
+
+      if (response.status || response.success) {
+        setCreateModalVisible(false);
+        cargarPedidos();
+        showAlertBox('success', '¡Éxito!', response.msj || 'Pedido registrado correctamente.');
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo registrar el pedido.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+  // Manejador de Modificación
+  const handleEditSubmit = async (formData) => {
+    try {
+      const response = await modificarPedido(formData);
+
+      if (response.status || response.success) {
+        setEditModalVisible(false);
+        cargarPedidos();
+        showAlertBox('success', '¡Actualizado!', response.msj || 'Pedido actualizado correctamente.');
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo actualizar el pedido.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
+
+  // Manejador de Eliminación
+  const handleDelete = async (pedido) => {
+    const pedidoId = pedido.id_pedido || pedido.id;
+
+    if (!pedidoId) {
+      showAlertBox('error', 'Error', 'No se pudo identificar el ID del pedido a eliminar.');
+      return;
+    }
+
+    const confirmado = window.confirm(`¿Estás seguro de eliminar el pedido #${pedidoId}?`);
+    if (!confirmado) return;
+
+    try {
+      const response = await eliminarPedido(pedidoId);
+
+      if (response.status || response.success) {
+        cargarPedidos();
+        showAlertBox('success', '¡Eliminado!', response.msj || `Pedido #${pedidoId} eliminado correctamente.`);
+      } else {
+        showAlertBox('error', 'Error', response.message || response.msj || 'No se pudo eliminar el pedido.');
+      }
+    } catch (e) {
+      showAlertBox('error', 'Error de conexión', e.message || 'Ocurrió un error inesperado al conectar con el servidor.');
+    }
+  };
 
   // Filtrado
   const q = textoFiltrado.trim().toLowerCase();
-  const filtered = pedidos.filter(p => 
-    String(p.id_pedido).includes(q) || 
-    p.nombre_cliente.toLowerCase().includes(q) || 
-    p.productos.toLowerCase().includes(q) || 
-    p.nombre_estado.toLowerCase().includes(q)
+  const filtered = pedidos.filter(p =>
+    String(p.id_pedido ?? '').includes(q) ||
+    String(p.nombre_cliente ?? '').toLowerCase().includes(q) ||
+    String(p.productos ?? '').toLowerCase().includes(q) ||
+    String(p.nombre_estado ?? '').toLowerCase().includes(q)
   );
 
   // Paginación dinámica
@@ -59,7 +144,7 @@ export default function PedidoScreens() {
   return (
     <Page>
       <PageHeader icon="briefcase" title="Gestión de Pedidos" crumb="Inicio  ›  Pedidos" />
-      
+
       <View style={[styles.toolbar, isPhone && styles.toolbarPhone]}>
         <View style={styles.leftTools}>
           <TouchableOpacity style={styles.btnNuevo} onPress={() => setCreateModalVisible(true)}>
@@ -77,16 +162,16 @@ export default function PedidoScreens() {
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.tableScroll}>
             {paginatedData.length > 0 ? (
-              <PedidoTable 
+              <PedidoTable
                 pedidos={paginatedData}
                 onView={(p) => { setSelectedPedido(p); setViewModalVisible(true); }}
                 onEdit={(p) => { setSelectedPedido(p); setEditModalVisible(true); }}
-                onDelete={(p) => alert(`Eliminar pedido #${p.id_pedido}`)}
+                onDelete={handleDelete}
               />
             ) : <Text style={styles.noResults}>No se encontraron pedidos.</Text>}
           </ScrollView>
 
-          <Pagination 
+          <Pagination
             page={currentPage}
             pages={totalPages}
             onPage={(p) => setCurrentPage(p)}
@@ -99,8 +184,22 @@ export default function PedidoScreens() {
 
       {/* Modales */}
       <PedidoViewModal visible={viewModalVisible} pedido={selectedPedido} onClose={() => setViewModalVisible(false)} />
-      <PedidoCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={(data) => console.log('Crear:', data)} />
-      <PedidoEditModal visible={editModalVisible} pedido={selectedPedido} onClose={() => setEditModalVisible(false)} onSubmit={(data) => console.log('Editar:', data)} />
+      <PedidoCreateModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSubmit={handleCreateSubmit} />
+      <PedidoEditModal
+        key={editModalVisible ? selectedPedido?.id_pedido ?? 'nuevo' : 'cerrado'}
+        visible={editModalVisible}
+        pedido={selectedPedido}
+        onClose={() => setEditModalVisible(false)}
+        onSubmit={handleEditSubmit}
+      />
+
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertVisible(false)}
+      />
     </Page>
   );
 }

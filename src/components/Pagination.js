@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../utils/theme';
+import { useLayout } from '../utils/layout';
 
 // Calcula hasta 5 números de página alrededor de la actual
 const pageNumbers = (page, pages) => {
@@ -16,6 +17,7 @@ export default function Pagination({
   recordsPerPage = 10, 
   onRecordsPerPageChange 
 }) {
+  const { isPhone } = useLayout();
   const startRecord = totalRecords === 0 ? 0 : (page - 1) * recordsPerPage + 1;
   const endRecord = Math.min(page * recordsPerPage, totalRecords);
 
@@ -45,7 +47,7 @@ export default function Pagination({
       </View>
 
       {/* 2. Botones de Paginación Numérica (Anterior, 1 2 3, Siguiente) */}
-      <View style={styles.paginationNav}>
+      <View style={[styles.paginationNav, isPhone && styles.paginationNavPhone]}>
         <PageButton label="Anterior" disabled={page <= 1} onPress={() => onPage(page - 1)} />
         {pageNumbers(page, pages).map((n) => (
           <PageButton key={n} label={String(n)} active={n === page} onPress={() => onPage(n)} />
@@ -77,7 +79,8 @@ const styles = StyleSheet.create({
   rowsBtnText: { color: colors.text, fontSize: 12, fontWeight: 'bold' },
   rowsBtnTextActive: { color: '#ffffff' },
   infoText: { color: colors.muted, fontSize: 13 },
-  paginationNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
+  paginationNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 6 },
+  paginationNavPhone: { justifyContent: 'center' },
   btn: { minWidth: 34, height: 32, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1e293b' },
   active: { backgroundColor: colors.red, borderColor: colors.red },
   disabled: { opacity: 0.4 },

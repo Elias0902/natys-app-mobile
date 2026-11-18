@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { colors } from '../../../utils/theme';
+import { firstError, isBlank, isInteger, isNonNegative, lengthBetween } from '../../../utils/validation';
 
 export default function ProductoCreateModal({ visible, onClose, onSubmit }) {
   const [form, setForm] = useState({
@@ -15,10 +16,14 @@ export default function ProductoCreateModal({ visible, onClose, onSubmit }) {
   };
 
   const handleSave = () => {
-    if (!form.nombre_producto || !form.precio_venta || !form.stock) {
-      alert('Por favor completa los campos obligatorios.');
-      return;
-    }
+    const error = firstError([
+      [isBlank(form.nombre_producto), 'El nombre del producto es obligatorio (*).'],
+      [!isBlank(form.nombre_producto) && !lengthBetween(form.nombre_producto, 2, 100), 'El nombre debe tener entre 2 y 100 caracteres.'],
+      [!isBlank(form.id_categoria) && !isInteger(form.id_categoria), 'El ID de categoría debe ser un número entero.'],
+      [!isNonNegative(form.precio_venta), 'El precio de venta debe ser un número mayor o igual a cero.'],
+      [!isInteger(form.stock), 'El stock debe ser un número entero mayor o igual a cero.'],
+    ]);
+    if (error) { alert(error); return; }
     onSubmit(form);
     onClose();
   };

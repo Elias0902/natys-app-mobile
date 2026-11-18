@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { colors } from '../../../utils/theme';
 
-export default function NotificacionViewModal({ visible, notificacion, onClose }) {
+export default function NotificacionViewModal({ visible, notificacion, onClose, onEdit, onMarcarLeida, onDelete }) {
   if (!notificacion) return null;
 
   return (
@@ -33,6 +33,18 @@ export default function NotificacionViewModal({ visible, notificacion, onClose }
             <Text style={styles.detailValue}>{notificacion.nombre_rol}</Text>
           </ScrollView>
 
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={[styles.actionBtn, styles.btnEdit]} onPress={() => onEdit && onEdit(notificacion)}>
+              <Text style={styles.actionBtnText}>Editar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.btnCheck]} onPress={() => onMarcarLeida && onMarcarLeida(notificacion)}>
+              <Text style={styles.actionBtnText}>Marcar como leída</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.btnDelete]} onPress={() => onDelete && onDelete(notificacion)}>
+              <Text style={styles.actionBtnText}>Eliminar</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
             <Text style={styles.modalCloseText}>Cerrar</Text>
           </TouchableOpacity>
@@ -51,6 +63,12 @@ const styles = StyleSheet.create({
   modalBody: { gap: 8, marginBottom: 16 },
   detailLabel: { fontSize: 12, color: colors.muted, fontWeight: '600', marginTop: 4 },
   detailValue: { fontSize: 14, color: colors.text, marginBottom: 4 },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  actionBtn: { flexGrow: 1, paddingVertical: 9, borderRadius: 6, alignItems: 'center' },
+  actionBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 12 },
+  btnEdit: { backgroundColor: '#1d4ed8' },
+  btnCheck: { backgroundColor: '#15803d' },
+  btnDelete: { backgroundColor: '#b91c1c' },
   modalCloseBtn: { backgroundColor: colors.red, paddingVertical: 10, borderRadius: 6, alignItems: 'center' },
   modalCloseText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
 });

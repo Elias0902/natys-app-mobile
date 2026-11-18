@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { colors } from '../../../utils/theme';
+import { firstError, inList, isBlank, isInteger, isNonNegative } from '../../../utils/validation';
 
 export default function CuentaPagarEditModal({ visible, cuenta, onClose, onSubmit }) {
   const [form, setForm] = useState({
@@ -24,6 +25,13 @@ export default function CuentaPagarEditModal({ visible, cuenta, onClose, onSubmi
   };
 
   const handleUpdate = () => {
+    const error = firstError([
+      [!isInteger(form.id_cuenta_x_pagar), 'La cuenta seleccionada no es válida.'],
+      [isBlank(form.saldo_pendiente), 'El saldo pendiente es obligatorio (*).'],
+      [!isBlank(form.saldo_pendiente) && !isNonNegative(form.saldo_pendiente), 'El saldo pendiente debe ser un número mayor o igual a cero.'],
+      [!inList(form.estado_pago, ['Por Pagar', 'Pagado', 'Anulado']), 'Selecciona un estado de pago válido.'],
+    ]);
+    if (error) { alert(error); return; }
     onSubmit(form);
     onClose();
   };

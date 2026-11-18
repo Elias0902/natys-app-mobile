@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { colors } from '../../../utils/theme';
+import { firstError, inList, isBlank, isInteger, isNonNegative } from '../../../utils/validation';
 
 export default function CuentaCobrarEditModal({ visible, cuenta, onClose, onSubmit }) {
   const [form, setForm] = useState({
@@ -24,6 +25,13 @@ export default function CuentaCobrarEditModal({ visible, cuenta, onClose, onSubm
   };
 
   const handleUpdate = () => {
+    const error = firstError([
+      [!isInteger(form.id_cuenta_x_cobrar), 'La cuenta seleccionada no es válida.'],
+      [isBlank(form.saldo_pendiente), 'El saldo pendiente es obligatorio (*).'],
+      [!isBlank(form.saldo_pendiente) && !isNonNegative(form.saldo_pendiente), 'El saldo pendiente debe ser un número mayor o igual a cero.'],
+      [!inList(form.estado_cuenta, ['Por Cobrar', 'Cobrado', 'Pendiente', 'Anulado']), 'Selecciona un estado de cuenta válido.'],
+    ]);
+    if (error) { alert(error); return; }
     onSubmit(form);
     onClose();
   };
