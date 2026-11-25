@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { useDispatch } from 'react-redux';
 import { Page, PageHeader } from '../../../components/Page';
 import SearchBar from '../../../components/SearchBar';
 import Pagination from '../../../components/Pagination';
@@ -11,8 +12,10 @@ import ProductoEditModal from '../components/ProductoEditModal';
 import CustomAlert from '../../../components/CustomAlert';
 import { colors } from '../../../utils/theme';
 import { useLayout } from '../../../utils/layout';
+import { addItem } from '../../../store/cartSlice';
 
-export default function ProductoScreens({ onAdd }) {
+export default function ProductoScreens() {
+  const dispatch = useDispatch();
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -163,7 +166,7 @@ export default function ProductoScreens({ onAdd }) {
             {paginatedData.length > 0 ? (
               <ProductoTable
                 productos={paginatedData}
-                onAdd={onAdd}
+                onAdd={(p) => dispatch(addItem(p))}
                 onView={(p) => { setSelectedProducto(p); setViewModalVisible(true); }}
                 onEdit={(p) => { setSelectedProducto(p); setEditModalVisible(true); }}
                 onDelete={handleDelete}

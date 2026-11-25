@@ -1,228 +1,209 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, Alert, ActivityIndicator, SafeAreaView, useWindowDimensions } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  SafeAreaView,
+  useWindowDimensions,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useDispatch, useSelector } from 'react-redux';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+
 import LoginScreen from '../features/auth/screens/LoginScreen';
-import EcommerceScreen from '../features/ecommerce/screens/EcommerceScreen';
-import CartScreen from '../features/ecommerce/screens/CartScreen';
-import HelpCenterScreen from '../features/ayuda/screens/HelpCenterScreen';
-import ProfileScreen from '../features/miperfil/screens/ProfileScreen';
-import InfoScreen from '../screens/InfoScreen';
-import NotFoundScreen from '../screens/NotFoundScreen';
-
-// 📌 IMPORTAMOS LAS PANTALLAS REALES CONECTADAS A TUS APIS
-import ClienteScreens from '../features/clientes/screens/ClienteScreens';
-import ProveedorScreens from '../features/proveedores/screens/ProveedorScreens';
-import PedidoScreens from '../features/pedidos/screens/PedidoScreens';
-import ProductoScreens from '../features/productos/screens/ProductoScreens';
-import CompraScreens from '../features/compras/screens/CompraScreens';
-import EntregaScreens from '../features/entregas/screens/EntregaScreens';
-import PromocionScreens from '../features/promociones/screens/PromocionScreens';
-import PagoScreens from '../features/pagos/screens/PagoScreens';
-import NotificacionScreens from '../features/notificaciones/screens/NotificacionScreens';
-import CuentaCobrarScreens from '../features/cuentacobrar/screens/CuentaCobrarScreens';
-import CuentaPagarScreens from '../features/cuentapagar/screens/CuentaPagarScreens';
-
 import UserMenu from '../components/UserMenu';
 import Drawer from '../components/Drawer';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import { FLAT } from './menu';
 import { getTasas } from '../api/tasaApi';
-import { restoreSession, logout as endSession } from '../features/auth/services/authApi';
-import { createOrder } from '../features/ecommerce/services/ecommerceApi';
-import { setSessionExpiredHandler, request } from '../utils/http';
+import { setSessionExpiredHandler } from '../utils/http';
 import { colors } from '../utils/theme';
 import { LayoutContext, computeLayout } from '../utils/layout';
 
-const CART = { key: 'carrito', label: 'Carrito', icon: 'cart' };
-const byKey = (k) => FLAT.find((i) => i.key === k);
+import { createAppRoutes, stackScreenOptions } from './routes';
+import {
+  restoreSession,
+  signIn,
+  signOut,
+  sessionExpired,
+  clearLoginNotice,
+  selectUser,
+  selectCheckingSession,
+  selectLoginNotice,
+} from '../store/authSlice';
+import { selectCartCount } from '../store/cartSlice';
 
-async function obtenerModulosPermitidos(idRol) {
-  try {
-    const data = await request(`permisos&action=obtener_modulo&ID=${idRol}`, { method: 'GET' });
-    if (Array.isArray(data)) {
-      const permitidas = data
-        .filter(p => Number(p.status) === 1 && p.nombre_permiso === 'Consultar' && p.ruta)
-        .map(p => p.ruta);
-      return [...new Set(permitidas)];
-    }
-    return [];
-  } catch (e) {
-    console.error('Error cargando permisos de módulos:', e);
-    return [];
-  }
+const Stack = createNativeStackNavigator();
+const CART = { key: 'carrito', label: 'Carrito', icon: 'cart' };
+
+function LoginRoute() {
+  const dispatch = useDispatch();
+  const notice = useSelector(selectLoginNotice);
+  const handleLogin = (username, password) =>
+    dispatch(signIn({ username, password })).unwrap();
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <LoginScreen
+        notice={notice}
+        onLogin={handleLogin}
+        onClearNotice={() => dispatch(clearLoginNotice())}
+      />
+    </>
+  );
 }
 
-export default function AppNavigator() {
-  const [user, setUser] = useState(null);
-  const [checkingSession, setCheckingSession] = useState(true);
-  const [loginNotice, setLoginNotice] = useState('');
-  const [screen, setScreen] = useState(byKey('ecommerce'));
+function MainShell() {
+  const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const cartCount = useSelector(selectCartCount);
+  const navigation = useNavigation();
+
+  const [current, setCurrent] = useState('ecommerce');
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [cart, setCart] = useState({});
-  const [tasas, setTasas] = useState([]);
   const [userMenu, setUserMenu] = useState(false);
-  const [lastAccess, setLastAccess] = useState('');
   const [headerHeight, setHeaderHeight] = useState(64);
+  const [tasas, setTasas] = useState([]);
 
   const { width } = useWindowDimensions();
   const layout = useMemo(() => computeLayout(width, sidebarOpen), [width, sidebarOpen]);
-
-  const closeSession = () => { setMenuOpen(false); setUserMenu(false); setUser(null); setCart({}); };
-
-  useEffect(() => {
-    setSessionExpiredHandler(() => {
-      setLoginNotice('Tu sesión venció. Inicia sesión de nuevo.');
-      closeSession();
-    });
-
-    restoreSession()
-      .then(async (u) => {
-        if (u) {
-          const rolId = u.id_rol_usuario || u.id_rol;
-          if (rolId) {
-            u.modulos = await obtenerModulosPermitidos(rolId);
-          }
-        }
-        setUser(u);
-      })
-      .catch(() => setUser(null))
-      .finally(() => setCheckingSession(false));
-  }, []);
-
-  const handleLoginSuccess = async (u) => {
-    setLoginNotice('');
-    if (u) {
-      const rolId = u.id_rol_usuario || u.id_rol;
-      if (rolId) {
-        u.modulos = await obtenerModulosPermitidos(rolId);
-      }
-    }
-    setUser(u);
-  };
+  const routes = useMemo(() => createAppRoutes(setCurrent), []);
 
   useEffect(() => {
-    if (!user) return;
-    const d = new Date(), p2 = (n) => String(n).padStart(2, '0');
-    const h = d.getHours() % 12 || 12;
-    setLastAccess(`${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(h)}:${p2(d.getMinutes())}:${p2(d.getSeconds())} ${d.getHours() >= 12 ? 'PM' : 'AM'}`);
-    setScreen(byKey('ecommerce'));
-
-    // Tasas reales del dólar: se recargan cada 5 minutos sin pedir permisos
-    // ni enviar el token del usuario a la API externa.
     const cargarTasas = () => {
       getTasas().then(setTasas).catch(() => {});
     };
     cargarTasas();
     const temporizador = setInterval(cargarTasas, 5 * 60 * 1000);
     return () => clearInterval(temporizador);
-  }, [user]);
+  }, []);
 
-  const cartCount = Object.values(cart).reduce((a, i) => a + i.qty, 0);
+  // MainShell vive en el stack raíz; las pantallas están en el stack anidado "Main".
+  // Por esohay que indicar `screen` al navegar, si no el raíz no encuentra la ruta.
+  const goToScreen = (screen, params) =>
+    navigation.navigate('Main', params ? { screen, params } : { screen });
 
-  const change = (p, d) =>
-    setCart((c) => {
-      const qty = (c[p.id_producto]?.qty || 0) + d;
-      const next = { ...c };
-      if (qty <= 0) delete next[p.id_producto];
-      else next[p.id_producto] = { p, qty };
-      return next;
-    });
+  const go = (item) => {
+    if (!item?.key) return;
+    setMenuOpen(false);
 
-  const checkout = async (contact) => {
-    const items = Object.values(cart).map((i) => ({ id_producto: i.p.id_producto, cantidad: i.qty }));
-    const r = await createOrder({ ...contact, items });
-    const folio = r.pedido_id ? `\nN° de pedido: ${r.pedido_id}` : '';
-    Alert.alert('Pedido registrado', `${r.msj || r.message || 'Tu pedido fue registrado.'}${folio}`);
-    setCart({});
-    setScreen(byKey('ecommerce'));
+    if (item.info) {
+      goToScreen('info', {
+        title: item.label,
+        text: item.info,
+        icon: item.icon,
+      });
+      return;
+    }
+
+    // Las keys del menú son también los nombres de las rutas del stack anidado.
+    goToScreen(item.key);
   };
 
-  const go = (item) => { setScreen(item); setMenuOpen(false); };
-  const logout = () => { endSession().catch(() => {}); setLoginNotice(''); closeSession(); };
-  const toggleMenu = () => (layout.isDesktop ? setSidebarOpen((v) => !v) : setMenuOpen(true));
+  const logout = () => {
+    dispatch(signOut());
+    setMenuOpen(false);
+    setUserMenu(false);
+  };
 
-  if (checkingSession) {
-    return <View style={[s.container, s.center]}><ActivityIndicator color={colors.red} size="large" /></View>;
-  }
+  const toggleMenu = () =>
+    layout.isDesktop ? setSidebarOpen((v) => !v) : setMenuOpen(true);
 
-  if (!user) {
-    return (
-      <>
-        <StatusBar style="light" />
-        <LoginScreen notice={loginNotice} onLogin={handleLoginSuccess} />
-      </>
-    );
-  }
-
-  // 📌 RENDERIZADO DE PANTALLAS CONECTADAS DIRECTAMENTE A LAS APIS
-  let content;
-  if (screen.key === 'ecommerce') {
-    content = <EcommerceScreen cart={cart} cartCount={cartCount} onAdd={(p) => change(p, 1)} onCart={() => setScreen(CART)} />;
-  } else if (screen.key === 'carrito') {
-    content = <CartScreen cart={cart} onChange={change} onCheckout={checkout} onShop={() => setScreen(byKey('ecommerce'))} />;
-  } else if (screen.key === 'perfil') {
-    content = <ProfileScreen user={user} lastAccess={lastAccess} initialTab={screen.tab} />;
-  } else if (screen.key === 'clientes') {
-    content = <ClienteScreens />;
-  } else if (screen.key === 'proveedores') {
-    content = <ProveedorScreens />;
-  } else if (screen.key === 'pedidos') {
-    content = <PedidoScreens />;
-  } else if (screen.key === 'productos_lista') {
-    content = <ProductoScreens onAdd={(p) => change(p, 1)} />;
-  } else if (screen.key === 'compras') {
-    content = <CompraScreens />; // <--- Pantalla real de Compras
-  } else if (screen.key === 'entregas') {
-    content = <EntregaScreens />;
-  } else if (screen.key === 'promociones') {
-    content = <PromocionScreens />;
-  } else if (screen.key === 'notificaciones') {
-    content = <NotificacionScreens />;
-  } else if (screen.key === 'pagos') {
-    content = <PagoScreens />;
-  } else if (screen.key === 'cuentas_por_cobrar' || screen.key === 'cuentaporcobrar') {
-    content = <CuentaCobrarScreens />; // <--- Pantalla real de Cuentas por Cobrar
-  } else if (screen.key === 'cuentas_por_pagar' || screen.key === 'cuentaporpagar') {
-    content = <CuentaPagarScreens />; // <--- Pantalla real de Cuentas por Pagar
-  } else if (screen.key === 'ayuda') {
-    content = <HelpCenterScreen />;
-  } else if (screen.info) {
-    content = <InfoScreen title={screen.label} text={screen.info} icon={screen.icon} />;
-  } else {
-    content = <NotFoundScreen />;
-  }
+  const openCart = () => goToScreen(CART.key);
 
   return (
     <LayoutContext.Provider value={layout}>
       <SafeAreaView style={s.container}>
         <StatusBar style="light" />
+
         <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
-          <Header user={user} tasas={tasas} cartCount={cartCount} onMenu={toggleMenu} onCart={() => setScreen(CART)} onUser={() => setUserMenu(true)} />
+          <Header
+            user={user}
+            tasas={tasas}
+            cartCount={cartCount}
+            onMenu={toggleMenu}
+            onCart={openCart}
+            onUser={() => setUserMenu(true)}
+          />
         </View>
+
         <View style={s.main}>
-          {layout.isDesktop && sidebarOpen && <Sidebar user={user} current={screen.key} onSelect={go} onLogout={logout} />}
-          <View style={s.body}>{content}</View>
+          {layout.isDesktop && sidebarOpen && (
+            <Sidebar user={user} current={current} onSelect={go} onLogout={logout} />
+          )}
+          <View style={s.body}>
+            <Stack.Navigator key="main-stack" screenOptions={stackScreenOptions}>
+              {routes.map(({ name, component }) => (
+                <Stack.Screen key={name} name={name} component={component} />
+              ))}
+            </Stack.Navigator>
+          </View>
         </View>
+
         <UserMenu
           visible={userMenu}
           top={headerHeight}
           onClose={() => setUserMenu(false)}
-          onTab={(tab) => { setUserMenu(false); setScreen({ key: 'perfil', label: 'Mi Perfil', icon: 'user', tab }); }}
-          onSoon={(l) => { setUserMenu(false); Alert.alert(l, 'Próximamente'); }}
+          onTab={(tab) => {
+            setUserMenu(false);
+            goToScreen('perfil', { tab });
+          }}
+          onSoon={(label) => {
+            setUserMenu(false);
+            Alert.alert(label, 'Próximamente');
+          }}
           onLogout={logout}
         />
+
         <Drawer
           user={user}
           visible={menuOpen && !layout.isDesktop}
-          current={screen.key}
+          current={current}
           onSelect={go}
           onClose={() => setMenuOpen(false)}
           onLogout={logout}
         />
       </SafeAreaView>
     </LayoutContext.Provider>
+  );
+}
+
+export default function AppNavigator() {
+  const dispatch = useDispatch();
+  const checkingSession = useSelector(selectCheckingSession);
+  const user = useSelector(selectUser);
+
+  useEffect(() => {
+    setSessionExpiredHandler(() => dispatch(sessionExpired()));
+    dispatch(restoreSession());
+    return () => setSessionExpiredHandler(null);
+  }, [dispatch]);
+
+  if (checkingSession) {
+    return (
+      <View style={[s.container, s.center]}>
+        <StatusBar style="light" />
+        <ActivityIndicator color={colors.red} size="large" />
+      </View>
+    );
+  }
+
+  // La key fuerza un stack limpio al entrar/salir de sesión.
+  return (
+    <Stack.Navigator
+      key={user ? 'authenticated' : 'anonymous'}
+      screenOptions={stackScreenOptions}
+    >
+      {user ? (
+        <Stack.Screen name="Main" component={MainShell} />
+      ) : (
+        <Stack.Screen name="Login" component={LoginRoute} />
+      )}
+    </Stack.Navigator>
   );
 }
 

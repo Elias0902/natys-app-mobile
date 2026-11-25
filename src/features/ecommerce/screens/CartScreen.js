@@ -1,5 +1,17 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  Image,
+  Alert,
+} from 'react-native';
+import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../../utils/theme';
 import { isPhone as isValidPhone, lengthBetween } from '../../../utils/validation';
@@ -9,6 +21,12 @@ import { Page, PageHeader } from '../../../components/Page';
 import ActionButton from '../../../components/ActionButton';
 import Icon from '../../../components/Icon';
 import { BASE_URL } from '../../../utils/config';
+import {
+  changeQty,
+  checkoutOrder,
+  selectCart,
+  selectCartTotal,
+} from '../../../store/cartSlice';
 
 // Same limits as Pedido::Registrar_Pedido
 const MIN_BOXES = 100;
@@ -22,6 +40,31 @@ const METHODS = [
   { id: 'credito', label: 'Crédito' },
 ];
 
+const DEFAULT_VALUES = {
+  direccion: '',
+  telefono: '',
+  observaciones: '',
+  metodo: 'transferencia',
+  referencia: '',
+  comprobante: null,
+};
+
+const RULES = {
+  direccion: {
+    validate: (v) =>
+      lengthBetween(v, 5, 200) || 'Ingresa la dirección de entrega (entre 5 y 200 caracteres).',
+  },
+  telefono: {
+    validate: (v) => isValidPhone(v) || 'Ingresa un teléfono válido. Ej: 0412-1234567',
+  },
+  observaciones: {
+    validate: (v) => String(v ?? '').length <= 250 || 'Las observaciones no pueden superar los 250 caracteres.',
+  },
+  metodo: {
+    validate: (v) => METHODS.some((m) => m.id === v) || 'Selecciona un método de pago válido.',
+  },
+};
+
 // Orders need at least 100 boxes, so the quantity can be typed. Applied when leaving the field.
 function QtyInput({ qty, onSet }) {
   const [text, setText] = useState(String(qty));
@@ -31,45 +74,66 @@ function QtyInput({ qty, onSet }) {
     else setText(String(qty));
   };
   return (
-    <TextInput style={s.qInput} value={text} onChangeText={setText} onBlur={commit} onSubmitEditing={commit}
-      keyboardType="number-pad" selectTextOnFocus accessibilityLabel="Cantidad" />
+    <TextInput
+      style={s.qInput}
+      value={text}
+      onChangeText={setText}
+      onBlur={commit}
+      onSubmitEditing={commit}
+      keyboardType="number-pad"
+      selectTextOnFocus
+      accessibilityLabel="Cantidad"
+    />
   );
 }
 
 // Cart first, then "Finalizar pedido" with the same fields as the web checkout.
-export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
+export default function CartScreen() {
+  const dispatch = useDispatch();
+  const navigation = useNavigation();
+  const cart = useSelector(selectCart);
+  const total = useSelector(selectCartTotal);
+
   const [step, setStep] = useState('cart');
-  const [form, setForm] = useState({
-    direccion: '',
-    telefono: '',
-    observaciones: '',
-    metodo: 'transferencia',
-    referencia: '',
-  });
-  const [comprobante, setComprobante] = useState(null);
-  const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const { isPhone, contentWidth } = useLayout();
 
-  const setField = (key) => (value) => setForm((current) => ({ ...current, [key]: value }));
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    setError,
+    clearErrors,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: DEFAULT_VALUES,
+    mode: 'onSubmit',
+  });
+
+  const metodo = useWatch({ control, name: 'metodo' });
+  const comprobante = useWatch({ control, name: 'comprobante' });
   const items = Object.values(cart);
-  const total = items.reduce((sum, i) => sum + i.qty * Number(i.p.precio_venta), 0);
   const count = items.reduce((sum, i) => sum + i.qty, 0);
   const twoColumns = !isPhone && contentWidth >= 760;
   const serverRoot = BASE_URL.replace('/api', '');
-  const requiresReference = ['transferencia', 'pago_movil'].includes(form.metodo);
+  const requiresReference = ['transferencia', 'pago_movil'].includes(metodo);
+
+  const change = (p, d) => dispatch(changeQty({ product: p, delta: d }));
 
   const goCheckout = () => {
-    setError('');
+    clearErrors();
     if (count < MIN_BOXES || count > MAX_BOXES) {
-      setError(`El pedido debe tener entre ${MIN_BOXES} y ${MAX_BOXES} cajas. Llevas ${count}.`);
+      setError('root', {
+        message: `El pedido debe tener entre ${MIN_BOXES} y ${MAX_BOXES} cajas. Llevas ${count}.`,
+      });
       return;
     }
     setStep('checkout');
   };
 
   const pickComprobante = async () => {
-    setError('');
+    clearErrors('root');
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -80,63 +144,64 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
 
       const asset = result.assets[0];
       if (!asset.base64) {
-        setError('No se pudo leer la imagen. Intenta con otra.');
+        setError('root', { message: 'No se pudo leer la imagen. Intenta con otra.' });
         return;
       }
       if ((asset.base64.length * 3) / 4 > MAX_COMPROBANTE) {
-        setError('El comprobante debe pesar menos de 3 MB.');
+        setError('root', { message: 'El comprobante debe pesar menos de 3 MB.' });
         return;
       }
       const mime = /^image\/(png|webp)$/i.test(asset.mimeType || '') ? asset.mimeType : 'image/jpeg';
-      setComprobante({
+      setValue('comprobante', {
         name: asset.fileName || `comprobante.${mime.split('/')[1]}`,
         dataUri: `data:${mime};base64,${asset.base64}`,
       });
     } catch {
-      setError('No se pudo seleccionar el comprobante.');
+      setError('root', { message: 'No se pudo seleccionar el comprobante.' });
     }
   };
 
-  const submit = async (pagarAhora) => {
-    setError('');
+  const submit = async (values, pagarAhora) => {
+    clearErrors('root');
+
     if (count < MIN_BOXES || count > MAX_BOXES) {
-      setError(`El pedido debe tener entre ${MIN_BOXES} y ${MAX_BOXES} cajas. Llevas ${count}.`);
+      setError('root', {
+        message: `El pedido debe tener entre ${MIN_BOXES} y ${MAX_BOXES} cajas. Llevas ${count}.`,
+      });
       return;
     }
-    if (!lengthBetween(form.direccion, 5, 200)) {
-      setError('Ingresa la dirección de entrega (entre 5 y 200 caracteres).');
-      return;
-    }
-    if (!isValidPhone(form.telefono)) {
-      setError('Ingresa un teléfono válido. Ej: 0412-1234567');
-      return;
-    }
-    if (form.observaciones.length > 250) {
-      setError('Las observaciones no pueden superar los 250 caracteres.');
-      return;
-    }
-    if (!METHODS.some((m) => m.id === form.metodo)) {
-      setError('Selecciona un método de pago válido.');
-      return;
-    }
-    if (pagarAhora && form.metodo !== 'credito' && requiresReference && !form.referencia.trim()) {
-      setError('Ingresa el número de referencia para pagar ahora.');
+    if (
+      pagarAhora &&
+      values.metodo !== 'credito' &&
+      ['transferencia', 'pago_movil'].includes(values.metodo) &&
+      !String(values.referencia || '').trim()
+    ) {
+      setError('referencia', { message: 'Ingresa el número de referencia para pagar ahora.' });
       return;
     }
 
     setSending(true);
     try {
-      await onCheckout({
-        direccion: form.direccion.trim(),
-        telefono: form.telefono.replace(/\D/g, ''),
-        observaciones: form.observaciones.trim(),
-        metodo: form.metodo,
-        referencia: form.referencia.trim(),
-        pagar_ahora: pagarAhora && form.metodo !== 'credito' ? 1 : 0,
-        img_pago: pagarAhora && comprobante ? comprobante.dataUri : '',
-      });
+      const r = await dispatch(
+        checkoutOrder({
+          direccion: values.direccion.trim(),
+          telefono: values.telefono.replace(/\D/g, ''),
+          observaciones: String(values.observaciones || '').trim(),
+          metodo: values.metodo,
+          referencia: String(values.referencia || '').trim(),
+          pagar_ahora: pagarAhora && values.metodo !== 'credito' ? 1 : 0,
+          img_pago: pagarAhora && values.comprobante ? values.comprobante.dataUri : '',
+        }),
+      ).unwrap();
+
+      const folio = r?.pedido_id ? `\nN° de pedido: ${r.pedido_id}` : '';
+      Alert.alert('Pedido registrado', `${r?.msj || r?.message || 'Tu pedido fue registrado.'}${folio}`);
+      reset(DEFAULT_VALUES);
+      navigation.navigate('ecommerce');
     } catch (e) {
-      setError(e.message);
+      const message = typeof e === 'string' ? e : e?.message;
+      setError('root', { message: message || 'No se pudo registrar el pedido.' });
+    } finally {
       setSending(false);
     }
   };
@@ -148,7 +213,7 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
         <View style={s.empty}>
           <Icon name="cart" size={48} color={colors.muted} strokeWidth={1.5} />
           <Text style={s.emptyTitle}>Tu carrito está vacío</Text>
-          <ActionButton icon="bag" size="lg" label="Ir a la tienda" onPress={onShop} />
+          <ActionButton icon="bag" size="lg" label="Ir a la tienda" onPress={() => navigation.navigate('ecommerce')} />
         </View>
       </Page>
     );
@@ -158,7 +223,13 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
     return (
       <Page>
         <PageHeader icon="cart" title="Mi Carrito" crumb="Inicio  ›  Ecommerce  ›  Carrito">
-          <ActionButton icon="bag" size="lg" variant="outline" label="Seguir comprando" onPress={onShop} />
+          <ActionButton
+            icon="bag"
+            size="lg"
+            variant="outline"
+            label="Seguir comprando"
+            onPress={() => navigation.navigate('ecommerce')}
+          />
         </PageHeader>
 
         <View style={[s.layout, twoColumns && s.layoutRow]}>
@@ -179,11 +250,11 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
                     <Text style={s.price}>{money(i.p.precio_venta)} c/u</Text>
                   </View>
                   <View style={s.qty}>
-                    <TouchableOpacity style={s.qBtn} onPress={() => onChange(i.p, -1)} accessibilityLabel="Quitar uno">
+                    <TouchableOpacity style={s.qBtn} onPress={() => change(i.p, -1)} accessibilityLabel="Quitar uno">
                       <Icon name="minus" size={14} color={colors.text} />
                     </TouchableOpacity>
-                    <QtyInput key={i.qty} qty={i.qty} onSet={(n) => onChange(i.p, n - i.qty)} />
-                    <TouchableOpacity style={s.qBtn} onPress={() => onChange(i.p, 1)} accessibilityLabel="Agregar uno">
+                    <QtyInput key={i.qty} qty={i.qty} onSet={(n) => change(i.p, n - i.qty)} />
+                    <TouchableOpacity style={s.qBtn} onPress={() => change(i.p, 1)} accessibilityLabel="Agregar uno">
                       <Icon name="plus" size={14} color={colors.text} />
                     </TouchableOpacity>
                   </View>
@@ -200,7 +271,7 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
             <View style={s.sumRow}><Text style={s.sumLabel}>Subtotal</Text><Text style={s.sumValue}>{money(total)}</Text></View>
             <View style={[s.sumRow, s.totalRow]}><Text style={s.totalLabel}>Total</Text><Text style={s.total}>{money(total)}</Text></View>
             <Text style={s.hint}>Cada pedido debe tener entre {MIN_BOXES} y {MAX_BOXES} cajas.</Text>
-            {!!error && <Text style={s.error}>{error}</Text>}
+            {!!errors.root?.message && <Text style={s.error}>{errors.root.message}</Text>}
             <ActionButton size="lg" block label={`Pagar ahora ${money(total)}`} onPress={goCheckout} />
           </View>
         </View>
@@ -211,7 +282,16 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
   return (
     <Page>
       <PageHeader icon="bag" title="Finalizar pedido" crumb="Inicio  ›  Ecommerce  ›  Carrito  ›  Finalizar pedido">
-        <ActionButton icon="cart" size="lg" variant="outline" label="Volver al carrito" onPress={() => { setError(''); setStep('cart'); }} />
+        <ActionButton
+          icon="cart"
+          size="lg"
+          variant="outline"
+          label="Volver al carrito"
+          onPress={() => {
+            clearErrors();
+            setStep('cart');
+          }}
+        />
       </PageHeader>
 
       <View style={s.checkout}>
@@ -219,36 +299,107 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
         <Text style={s.checkoutMeta}>{items.length} producto(s) · {count} cajas</Text>
 
         <Text style={s.label}>Dirección de entrega *</Text>
-        <TextInput style={[s.input, s.textArea]} placeholder="Calle, número, ciudad" placeholderTextColor={colors.muted}
-          value={form.direccion} onChangeText={setField('direccion')} multiline />
+        <Controller
+          name="direccion"
+          control={control}
+          rules={RULES.direccion}
+          render={({ field, fieldState }) => (
+            <>
+              <TextInput
+                style={[s.input, s.textArea, !!fieldState.error && s.inputError]}
+                placeholder="Calle, número, ciudad"
+                placeholderTextColor={colors.muted}
+                {...field}
+                multiline
+              />
+              {!!fieldState.error && <Text style={s.fieldError}>{fieldState.error.message}</Text>}
+            </>
+          )}
+        />
 
         <Text style={s.label}>Teléfono de contacto *</Text>
-        <TextInput style={s.input} placeholder="0412-1234567" placeholderTextColor={colors.muted} keyboardType="phone-pad"
-          value={form.telefono} onChangeText={setField('telefono')} />
+        <Controller
+          name="telefono"
+          control={control}
+          rules={RULES.telefono}
+          render={({ field, fieldState }) => (
+            <>
+              <TextInput
+                style={[s.input, !!fieldState.error && s.inputError]}
+                placeholder="0412-1234567"
+                placeholderTextColor={colors.muted}
+                keyboardType="phone-pad"
+                {...field}
+              />
+              {!!fieldState.error && <Text style={s.fieldError}>{fieldState.error.message}</Text>}
+            </>
+          )}
+        />
 
         <Text style={s.label}>Observaciones</Text>
-        <TextInput style={[s.input, s.textArea]} placeholder="Indicaciones para la entrega (opcional)" placeholderTextColor={colors.muted}
-          value={form.observaciones} onChangeText={setField('observaciones')} multiline />
+        <Controller
+          name="observaciones"
+          control={control}
+          rules={RULES.observaciones}
+          render={({ field, fieldState }) => (
+            <>
+              <TextInput
+                style={[s.input, s.textArea, !!fieldState.error && s.inputError]}
+                placeholder="Indicaciones para la entrega (opcional)"
+                placeholderTextColor={colors.muted}
+                {...field}
+                multiline
+              />
+              {!!fieldState.error && <Text style={s.fieldError}>{fieldState.error.message}</Text>}
+            </>
+          )}
+        />
 
         <Text style={s.label}>Método de pago *</Text>
-        <View style={s.chips}>
-          {METHODS.map((method) => {
-            const active = form.metodo === method.id;
-            return (
-              <TouchableOpacity key={method.id} style={[s.chip, active && s.chipActive]}
-                onPress={() => setField('metodo')(method.id)}>
-                {active ? <Icon name="check" size={13} color="#fff" /> : null}
-                <Text style={[s.chipText, active && s.chipTextActive]}>{method.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <Controller
+          name="metodo"
+          control={control}
+          rules={RULES.metodo}
+          render={({ field, fieldState }) => (
+            <>
+              <View style={s.chips}>
+                {METHODS.map((method) => {
+                  const active = field.value === method.id;
+                  return (
+                    <TouchableOpacity
+                      key={method.id}
+                      style={[s.chip, active && s.chipActive]}
+                      onPress={() => field.onChange(method.id)}
+                    >
+                      {active ? <Icon name="check" size={13} color="#fff" /> : null}
+                      <Text style={[s.chipText, active && s.chipTextActive]}>{method.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {!!fieldState.error && <Text style={s.fieldError}>{fieldState.error.message}</Text>}
+            </>
+          )}
+        />
 
-        {form.metodo !== 'credito' ? (
+        {metodo !== 'credito' ? (
           <>
             <Text style={s.label}>N° de referencia{requiresReference ? ' *' : ' (opcional)'}</Text>
-            <TextInput style={s.input} placeholder="Número de referencia del pago" placeholderTextColor={colors.muted}
-              value={form.referencia} onChangeText={setField('referencia')} />
+            <Controller
+              name="referencia"
+              control={control}
+              render={({ field, fieldState }) => (
+                <>
+                  <TextInput
+                    style={[s.input, !!fieldState.error && s.inputError]}
+                    placeholder="Número de referencia del pago"
+                    placeholderTextColor={colors.muted}
+                    {...field}
+                  />
+                  {!!fieldState.error && <Text style={s.fieldError}>{fieldState.error.message}</Text>}
+                </>
+              )}
+            />
           </>
         ) : null}
 
@@ -259,12 +410,24 @@ export default function CartScreen({ cart, onChange, onCheckout, onShop }) {
         </View>
 
         <View style={[s.sumRow, s.totalRow]}><Text style={s.totalLabel}>Total</Text><Text style={s.total}>{money(total)}</Text></View>
-        {!!error && <Text style={s.error}>{error}</Text>}
+        {!!errors.root?.message && <Text style={s.error}>{errors.root.message}</Text>}
 
         <View style={s.actions}>
-          <ActionButton size="lg" block variant="outline" label="Pagar después" disabled={sending}
-            onPress={() => submit(false)} />
-          <ActionButton size="lg" block label="Pagar ahora" disabled={sending} onPress={() => submit(true)} />
+          <ActionButton
+            size="lg"
+            block
+            variant="outline"
+            label="Pagar después"
+            disabled={sending}
+            onPress={handleSubmit((values) => submit(values, false))}
+          />
+          <ActionButton
+            size="lg"
+            block
+            label="Pagar ahora"
+            disabled={sending}
+            onPress={handleSubmit((values) => submit(values, true))}
+          />
         </View>
         {sending ? <ActivityIndicator color={colors.red} style={s.spinner} /> : null}
       </View>
@@ -276,8 +439,10 @@ const s = StyleSheet.create({
   qInput: { width: 48, textAlign: 'center', color: colors.text, fontWeight: '700', paddingVertical: 4, borderColor: colors.border, borderWidth: 1, borderRadius: 6 },
   hint: { color: colors.muted, fontSize: 12 },
   input: { color: colors.text, backgroundColor: colors.bg, borderColor: colors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  inputError: { borderColor: '#f87171' },
   textArea: { minHeight: 74, textAlignVertical: 'top' },
   label: { color: colors.text, fontSize: 13, fontWeight: '700', marginTop: 10, marginBottom: 6 },
+  fieldError: { color: '#f87171', fontSize: 11, marginTop: 4 },
   error: { color: '#f87171', fontSize: 13, textAlign: 'center' },
   empty: { alignItems: 'center', gap: 14, backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 40, paddingHorizontal: 20 },
   emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },

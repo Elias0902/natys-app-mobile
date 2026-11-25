@@ -1,115 +1,238 @@
-import { useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Linking, ScrollView, Animated, Easing, Image, useWindowDimensions } from 'react-native';
-import { login, signup, resetPassword } from '../services/authApi';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Linking,
+  ScrollView,
+  Animated,
+  Easing,
+  Image,
+  useWindowDimensions,
+} from 'react-native';
+import { Controller, useForm } from 'react-hook-form';
+import { signup, resetPassword } from '../services/authApi';
 import { LANDING_URL } from '../../../utils/config';
 import { colors } from '../../../utils/theme';
-import { digitsOnly, inList, isBlank, isEmail, isPassword, isPhone, isRif, isUsername, lengthBetween } from '../../../utils/validation';
+import {
+  digitsOnly,
+  inList,
+  isEmail,
+  isPassword,
+  isPhone,
+  isRif,
+  isUsername,
+  lengthBetween,
+} from '../../../utils/validation';
 import LoginIllustration from '../components/LoginIllustration';
 
-// Three views: login | signup | reset. On wide screens the illustration and the form swap sides.
+// Tres vistas: login | signup | reset. En pantallas anchas ilustración y formulario se intercambian.
 const MODES = {
-  login: { side: 0, title: 'Inicio de Sesión', sub: 'Ingresa tus credenciales para continuar', cta: 'Ingresar',
-    caption: 'Gestiona tu negocio de galletas desde cualquier lugar' },
-  signup: { side: 1, title: 'Crear Cuenta', sub: 'Regístrate para empezar a pedir', cta: 'Registrarme',
-    caption: 'Únete a Natys y haz tus pedidos en minutos' },
-  reset: { side: 1, title: 'Recuperar Contraseña', sub: 'Te enviaremos un enlace a tu correo', cta: 'Enviar enlace',
-    caption: 'Recupera el acceso a tu cuenta de forma segura' },
+  login: {
+    side: 0,
+    title: 'Inicio de Sesión',
+    sub: 'Ingresa tus credenciales para continuar',
+    cta: 'Ingresar',
+    caption: 'Gestiona tu negocio de galletas desde cualquier lugar',
+  },
+  signup: {
+    side: 1,
+    title: 'Crear Cuenta',
+    sub: 'Regístrate para empezar a pedir',
+    cta: 'Registrarme',
+    caption: 'Únete a Natys y haz tus pedidos en minutos',
+  },
+  reset: {
+    side: 1,
+    title: 'Recuperar Contraseña',
+    sub: 'Te enviaremos un enlace a tu correo',
+    cta: 'Enviar enlace',
+    caption: 'Recupera el acceso a tu cuenta de forma segura',
+  },
 };
 
-function Field({ icon, right, ...props }) {
+const DEFAULT_VALUES = {
+  username: '',
+  email: '',
+  password: '',
+  confirm: '',
+  tipo_id: 'V',
+  rif: '',
+  nombre: '',
+  tlf: '',
+  direccion: '',
+  sector: '',
+};
+
+// Mismas reglas que el backend (models/Autenticator.php), ahora como reglas de RHF.
+const SIGNUP_RULES = {
+  username: {
+    required: 'Ingresa un nombre de usuario.',
+    validate: (v) =>
+      isUsername(v) || 'El usuario debe tener de 5 a 20 caracteres: letras, números, @ o _.',
+  },
+  email: {
+    required: 'Ingresa tu correo.',
+    validate: (v) => isEmail(v) || 'Ingresa un correo electrónico válido.',
+  },
+  password: {
+    required: 'Ingresa tu contraseña.',
+    validate: (v) =>
+      isPassword(v) ||
+      'La contraseña debe tener de 6 a 11 caracteres, una mayúscula y un punto. Ej: Natys12.',
+  },
+  confirm: {
+    required: 'Confirma tu contraseña.',
+    validate: (v, values) => v === values.password || 'Las contraseñas no coinciden.',
+  },
+  tipo_id: {
+    validate: (v) => inList(v, ['V', 'J', 'G', 'E']) || 'Selecciona un tipo de documento válido.',
+  },
+  rif: {
+    required: 'Ingresa tu cédula o RIF.',
+    validate: (v) => isRif(v) || 'La cédula o RIF solo debe tener números.',
+  },
+  nombre: {
+    required: 'Ingresa tu nombre.',
+    validate: (v) => lengthBetween(v, 2, 100) || 'El nombre debe tener entre 2 y 100 caracteres.',
+  },
+  tlf: {
+    required: 'Ingresa tu teléfono.',
+    validate: (v) => isPhone(v) || 'Ingresa un teléfono válido de 11 dígitos (ej: 04163213495).',
+  },
+  direccion: {
+    required: 'Ingresa tu dirección.',
+    validate: (v) => lengthBetween(v, 5, 200) || 'La dirección debe tener entre 5 y 200 caracteres.',
+  },
+  sector: {
+    validate: (v) =>
+      inList(v, ['Norte', 'Sur', 'Este', 'Oeste']) || 'Selecciona un sector válido.',
+  },
+};
+
+function Field({ icon, right, error, ...props }) {
   return (
-    <View style={s.field}>
-      <Text style={s.icon}>{icon}</Text>
-      <TextInput style={s.input} placeholderTextColor={colors.muted} autoCapitalize="none" {...props} />
-      {right}
+    <View style={s.fieldWrap}>
+      <View style={s.field}>
+        <Text style={s.icon}>{icon}</Text>
+        <TextInput
+          style={s.input}
+          placeholderTextColor={colors.muted}
+          autoCapitalize="none"
+          {...props}
+        />
+        {right}
+      </View>
+      {!!error && <Text style={s.fieldError}>{error}</Text>}
     </View>
   );
 }
 
-function Choice({ options, value, onChange }) {
+function Choice({ options, value, onChange, error }) {
   return (
-    <View style={s.choices}>
-      {options.map((o) => (
-        <TouchableOpacity key={o} onPress={() => onChange(o)} style={[s.choice, value === o && s.choiceOn]}>
-          <Text style={[s.choiceText, value === o && s.choiceTextOn]}>{o}</Text>
-        </TouchableOpacity>
-      ))}
+    <View>
+      <View style={s.choices}>
+        {options.map((o) => (
+          <TouchableOpacity
+            key={o}
+            onPress={() => onChange(o)}
+            style={[s.choice, value === o && s.choiceOn]}
+          >
+            <Text style={[s.choiceText, value === o && s.choiceTextOn]}>{o}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {!!error && <Text style={s.fieldErrorChoice}>{error}</Text>}
     </View>
   );
 }
 
-// Same rules as the backend (models/Autenticator.php)
-function signupError(f) {
-  if (['username', 'email', 'password', 'confirm', 'rif', 'nombre', 'tlf', 'direccion', 'sector'].some((key) => isBlank(f[key]))) return 'Todos los campos son obligatorios.';
-  if (!isUsername(f.username)) return 'El usuario debe tener de 5 a 20 caracteres: letras, números, @ o _.';
-  if (!isEmail(f.email)) return 'Ingresa un correo electrónico válido.';
-  if (!isPassword(f.password)) return 'La contraseña debe tener de 6 a 11 caracteres, una mayúscula y un punto. Ej: Natys12.';
-  if (f.password !== f.confirm) return 'Las contraseñas no coinciden.';
-  if (!isRif(f.rif)) return 'La cédula o RIF solo debe tener números.';
-  if (!inList(f.tipo_id, ['V', 'J', 'G', 'E'])) return 'Selecciona un tipo de documento válido.';
-  if (!lengthBetween(f.nombre, 2, 100)) return 'El nombre debe tener entre 2 y 100 caracteres.';
-  if (!isPhone(f.tlf)) return 'Ingresa un teléfono válido de 11 dígitos (ej: 04163213495).';
-  if (!lengthBetween(f.direccion, 5, 200)) return 'La dirección debe tener entre 5 y 200 caracteres.';
-  if (!inList(f.sector, ['Norte', 'Sur', 'Este', 'Oeste'])) return 'Selecciona un sector válido.';
-  return '';
-}
-
-export default function LoginScreen({ notice = '', onLogin }) {
+export default function LoginScreen({ notice = '', onLogin, onClearNotice = () => {} }) {
   const { width } = useWindowDimensions();
   const wide = width >= 760;
   const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '', tipo_id: 'V', rif: '', nombre: '', tlf: '', direccion: '', sector: '' });
   const [show, setShow] = useState(false);
-  const [error, setError] = useState('');
-  const [info, setInfo] = useState(notice);
+  const [globalError, setGlobalError] = useState('');
+  const [localInfo, setLocalInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [panelW, setPanelW] = useState(0);
+  const info = notice || localInfo;
 
-  const slide = useRef(new Animated.Value(0)).current; // 0 = illustration left, 1 = illustration right
-  const fade = useRef(new Animated.Value(1)).current;
+  const { control, handleSubmit, reset } = useForm({
+    defaultValues: DEFAULT_VALUES,
+    mode: 'onSubmit',
+    shouldUnregister: true,
+  });
 
-  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const [slide] = useState(() => new Animated.Value(0));
+  const [fade] = useState(() => new Animated.Value(1));
+
+  const rulesFor = (name) => {
+    if (mode === 'login') {
+      if (name === 'username') return { required: 'Ingresa tu usuario.' };
+      if (name === 'password') return { required: 'Ingresa tu contraseña.' };
+      return {};
+    }
+    if (mode === 'reset') return name === 'email' ? SIGNUP_RULES.email : {};
+    return SIGNUP_RULES[name] || {};
+  };
 
   const go = (next) => {
     if (next === mode) return;
-    setError('');
-    setInfo('');
+    setGlobalError('');
+    setLocalInfo('');
+    reset(DEFAULT_VALUES);
+
     Animated.timing(fade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
       setMode(next);
       Animated.timing(fade, { toValue: 1, duration: 260, useNativeDriver: true }).start();
     });
-    Animated.timing(slide, { toValue: MODES[next].side, duration: 520, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start();
+    Animated.timing(slide, {
+      toValue: MODES[next].side,
+      duration: 520,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
   };
 
-  const submit = async () => {
-    setError('');
-    setInfo('');
+  const onSubmit = async (values) => {
+    setGlobalError('');
+    setLocalInfo('');
+    setLoading(true);
+
     try {
       if (mode === 'login') {
-        if (!form.username || !form.password) return setError('Todos los campos son obligatorios.');
-        setLoading(true);
-        onLogin(await login(form.username.trim(), form.password));
+        await onLogin(values.username.trim(), values.password);
       } else if (mode === 'signup') {
-        const invalid = signupError(form);
-        if (invalid) return setError(invalid);
-        setLoading(true);
-        const { confirm, ...data } = form;
-        const r = await signup({ ...data, username: form.username.trim(), email: form.email.trim(), rif: form.rif.trim(), nombre: form.nombre.trim(), tlf: digitsOnly(form.tlf), direccion: form.direccion.trim() });
-        go('login'); // go() clears the messages, so the success text goes after it
-        setInfo(r.message);
+        const { confirm, ...data } = values;
+        const r = await signup({
+          ...data,
+          username: values.username.trim(),
+          email: values.email.trim(),
+          rif: values.rif.trim(),
+          nombre: values.nombre.trim(),
+          tlf: digitsOnly(values.tlf),
+          direccion: values.direccion.trim(),
+        });
+        go('login'); // go() limpia mensajes: el éxito se coloca después.
+        onClearNotice();
+        setLocalInfo(r.message);
       } else {
-        if (isBlank(form.email)) return setError('Ingresa tu correo.');
-        if (!isEmail(form.email)) return setError('Ingresa un correo electrónico válido.');
-        setLoading(true);
-        const r = await resetPassword(form.email.trim());
-        setInfo(r.message);
+        const r = await resetPassword(values.email.trim());
+        onClearNotice();
+        setLocalInfo(r.message);
       }
     } catch (e) {
-      setError(e.message);
+      setGlobalError(e.message || 'Ocurrió un error. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
   };
+
+  const submitForm = () => handleSubmit(onSubmit)();
 
   const m = MODES[mode];
 
@@ -119,24 +242,163 @@ export default function LoginScreen({ notice = '', onLogin }) {
       <Text style={s.title}>{m.title}</Text>
       <Text style={s.sub}>{m.sub}</Text>
 
-      {mode !== 'reset' && <Field icon="👤" placeholder="Nombre de usuario" value={form.username} onChangeText={set('username')} />}
-      {mode !== 'login' && <Field icon="✉" placeholder="Correo electrónico" keyboardType="email-address" value={form.email} onChangeText={set('email')} />}
       {mode !== 'reset' && (
-        <Field icon="🔒" placeholder="Contraseña" secureTextEntry={!show} value={form.password} onChangeText={set('password')}
-          onSubmitEditing={mode === 'login' ? submit : undefined}
-          right={<TouchableOpacity onPress={() => setShow(!show)}><Text style={s.toggle}>{show ? 'Ocultar' : 'Ver'}</Text></TouchableOpacity>} />
+        <Controller
+          name="username"
+          control={control}
+          rules={rulesFor('username')}
+          render={({ field, fieldState }) => (
+            <Field
+              icon="👤"
+              placeholder="Nombre de usuario"
+              {...field}
+              error={fieldState.error?.message}
+              onSubmitEditing={mode === 'login' ? submitForm : undefined}
+            />
+          )}
+        />
       )}
+
+      {mode !== 'login' && (
+        <Controller
+          name="email"
+          control={control}
+          rules={rulesFor('email')}
+          render={({ field, fieldState }) => (
+            <Field
+              icon="✉"
+              placeholder="Correo electrónico"
+              keyboardType="email-address"
+              {...field}
+              error={fieldState.error?.message}
+            />
+          )}
+        />
+      )}
+
+      {mode !== 'reset' && (
+        <Controller
+          name="password"
+          control={control}
+          rules={rulesFor('password')}
+          render={({ field, fieldState }) => (
+            <Field
+              icon="🔒"
+              placeholder="Contraseña"
+              secureTextEntry={!show}
+              {...field}
+              error={fieldState.error?.message}
+              onSubmitEditing={mode === 'login' ? submitForm : undefined}
+              right={
+                <TouchableOpacity onPress={() => setShow(!show)}>
+                  <Text style={s.toggle}>{show ? 'Ocultar' : 'Ver'}</Text>
+                </TouchableOpacity>
+              }
+            />
+          )}
+        />
+      )}
+
       {mode === 'signup' && (
         <>
-          <Field icon="🔒" placeholder="Confirmar contraseña" secureTextEntry={!show} value={form.confirm} onChangeText={set('confirm')} />
+          <Controller
+            name="confirm"
+            control={control}
+            rules={rulesFor('confirm')}
+            render={({ field, fieldState }) => (
+              <Field
+                icon="🔒"
+                placeholder="Confirmar contraseña"
+                secureTextEntry={!show}
+                {...field}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
           <Text style={s.groupLabel}>Datos del cliente</Text>
-          <Choice options={['V', 'J', 'G', 'E']} value={form.tipo_id} onChange={set('tipo_id')} />
-          <Field icon="🪪" placeholder="Cédula o RIF (solo números)" keyboardType="number-pad" value={form.rif} onChangeText={set('rif')} />
-          <Field icon="🏪" placeholder="Nombre o razón social" autoCapitalize="words" value={form.nombre} onChangeText={set('nombre')} />
-          <Field icon="📞" placeholder="Teléfono" keyboardType="phone-pad" value={form.tlf} onChangeText={set('tlf')} />
-          <Field icon="📍" placeholder="Dirección" autoCapitalize="sentences" value={form.direccion} onChangeText={set('direccion')} />
+          <Controller
+            name="tipo_id"
+            control={control}
+            rules={rulesFor('tipo_id')}
+            render={({ field, fieldState }) => (
+              <Choice
+                options={['V', 'J', 'G', 'E']}
+                value={field.value}
+                onChange={field.onChange}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="rif"
+            control={control}
+            rules={rulesFor('rif')}
+            render={({ field, fieldState }) => (
+              <Field
+                icon="🪪"
+                placeholder="Cédula o RIF (solo números)"
+                keyboardType="number-pad"
+                {...field}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="nombre"
+            control={control}
+            rules={rulesFor('nombre')}
+            render={({ field, fieldState }) => (
+              <Field
+                icon="🏪"
+                placeholder="Nombre o razón social"
+                autoCapitalize="words"
+                {...field}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="tlf"
+            control={control}
+            rules={rulesFor('tlf')}
+            render={({ field, fieldState }) => (
+              <Field
+                icon="📞"
+                placeholder="Teléfono"
+                keyboardType="phone-pad"
+                {...field}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="direccion"
+            control={control}
+            rules={rulesFor('direccion')}
+            render={({ field, fieldState }) => (
+              <Field
+                icon="📍"
+                placeholder="Dirección"
+                autoCapitalize="sentences"
+                {...field}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
           <Text style={s.groupLabel}>Sector</Text>
-          <Choice options={['Norte', 'Sur', 'Este', 'Oeste']} value={form.sector} onChange={set('sector')} />
+          <Controller
+            name="sector"
+            control={control}
+            rules={rulesFor('sector')}
+            render={({ field, fieldState }) => (
+              <Choice
+                options={['Norte', 'Sur', 'Este', 'Oeste']}
+                value={field.value}
+                onChange={field.onChange}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
         </>
       )}
 
@@ -146,18 +408,22 @@ export default function LoginScreen({ notice = '', onLogin }) {
         </TouchableOpacity>
       )}
 
-      {!!error && <Text style={s.error}>{error}</Text>}
+      {!!globalError && <Text style={s.error}>{globalError}</Text>}
       {!!info && <Text style={s.info}>{info}</Text>}
 
-      <TouchableOpacity style={s.btn} onPress={submit} disabled={loading}>
+      <TouchableOpacity style={s.btn} onPress={submitForm} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>{m.cta}</Text>}
       </TouchableOpacity>
 
       <View style={s.switchRow}>
         {mode === 'login' ? (
-          <Text style={s.muted}>¿No tienes cuenta? <Text style={s.link} onPress={() => go('signup')}>Regístrate</Text></Text>
+          <Text style={s.muted}>
+            ¿No tienes cuenta? <Text style={s.link} onPress={() => go('signup')}>Regístrate</Text>
+          </Text>
         ) : (
-          <Text style={s.muted}>¿Ya tienes cuenta? <Text style={s.link} onPress={() => go('login')}>Inicia sesión</Text></Text>
+          <Text style={s.muted}>
+            ¿Ya tienes cuenta? <Text style={s.link} onPress={() => go('login')}>Inicia sesión</Text>
+          </Text>
         )}
       </View>
 
@@ -181,10 +447,17 @@ export default function LoginScreen({ notice = '', onLogin }) {
 
       {wide ? (
         <View style={s.cardWide} onLayout={(e) => setPanelW(e.nativeEvent.layout.width / 2)}>
-          {/* Both panels are half the card and slide past each other */}
-          <Animated.View style={[s.panel, s.art, { left: 0, transform: [{ translateX: Animated.multiply(slide, panelW) }] }]}>{art}</Animated.View>
-          <Animated.View style={[s.panel, { left: panelW, transform: [{ translateX: Animated.multiply(slide, -panelW) }] }]}>
-            <ScrollView contentContainerStyle={s.formWide} showsVerticalScrollIndicator={false}>{formView}</ScrollView>
+          <Animated.View
+            style={[s.panel, s.art, { left: 0, transform: [{ translateX: Animated.multiply(slide, panelW) }] }]}
+          >
+            {art}
+          </Animated.View>
+          <Animated.View
+            style={[s.panel, { left: panelW, transform: [{ translateX: Animated.multiply(slide, -panelW) }] }]}
+          >
+            <ScrollView contentContainerStyle={s.formWide} showsVerticalScrollIndicator={false}>
+              {formView}
+            </ScrollView>
           </Animated.View>
         </View>
       ) : (
@@ -212,6 +485,7 @@ const s = StyleSheet.create({
   logo: { width: 140, height: 82, alignSelf: 'center', marginBottom: 10 },
   title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' },
   sub: { color: colors.muted, fontSize: 12, textAlign: 'center', marginBottom: 20 },
+  fieldWrap: { marginBottom: 2 },
   field: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, marginBottom: 12 },
   icon: { fontSize: 15, marginRight: 8 },
   input: { flex: 1, color: colors.text, paddingVertical: 13, outlineStyle: 'none' },
@@ -224,6 +498,8 @@ const s = StyleSheet.create({
   choiceTextOn: { color: '#fff' },
   link: { color: colors.red, fontWeight: '700', fontSize: 12 },
   muted: { color: colors.muted, fontSize: 12 },
+  fieldError: { color: '#f87171', fontSize: 11, marginTop: -8, marginBottom: 6 },
+  fieldErrorChoice: { color: '#f87171', fontSize: 11, marginTop: -8, marginBottom: 6 },
   error: { color: '#f87171', marginBottom: 10, textAlign: 'center', fontSize: 13 },
   info: { color: '#4ade80', marginBottom: 10, textAlign: 'center', fontSize: 13 },
   btn: { backgroundColor: colors.red, borderRadius: 12, padding: 14, alignItems: 'center' },

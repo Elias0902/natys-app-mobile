@@ -1,33 +1,64 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { Controller, useForm } from 'react-hook-form';
 import { colors } from '../../../utils/theme';
-import { firstError, isBlank, isPassword } from '../../../utils/validation';
+import { isBlank, isPassword } from '../../../utils/validation';
+
+const DEFAULT_VALUES = {
+  password_actual: '',
+  password_nueva: '',
+  password_repetir: '',
+};
+
+const RULES = {
+  password_actual: { required: 'Ingresa tu contraseña actual.' },
+  password_nueva: {
+    required: 'Ingresa la contraseña nueva.',
+    validate: (v) =>
+      isBlank(v) ||
+      isPassword(v) ||
+      'La contraseña debe tener de 6 a 11 caracteres, una mayúscula y un punto. Ej: Natys12.',
+  },
+  password_repetir: {
+    required: 'Repite la contraseña nueva.',
+    validate: (v, values) =>
+      isBlank(v) || v === values.password_nueva || 'Las contraseñas nuevas no coinciden.',
+  },
+};
 
 export default function ChangePasswordModal({ visible, onClose, onSubmit }) {
-  const [form, setForm] = useState({
-    password_actual: '',
-    password_nueva: '',
-    password_repetir: '',
+  const { control, handleSubmit, reset } = useForm({
+    defaultValues: DEFAULT_VALUES,
+    mode: 'onSubmit',
   });
 
-  const handleChange = (key, value) => {
-    setForm({ ...form, [key]: value });
-  };
+  useEffect(() => {
+    if (visible) reset(DEFAULT_VALUES);
+  }, [visible, reset]);
 
-  const handleSave = () => {
-    const error = firstError([
-      [isBlank(form.password_actual), 'Ingresa tu contraseña actual.'],
-      [isBlank(form.password_nueva) || isBlank(form.password_repetir), 'Ingresa y repite la contraseña nueva.'],
-      [!isPassword(form.password_nueva), 'La contraseña debe tener de 6 a 11 caracteres, una mayúscula y un punto. Ej: Natys12.'],
-      [form.password_nueva !== form.password_repetir, 'Las contraseñas nuevas no coinciden.'],
-    ]);
-    if (error) { alert(error); return; }
-    onSubmit(form);
+  const handleSave = (values) => {
+    onSubmit(values);
     onClose();
   };
 
+  const renderInput = (placeholder) => function PasswordField({ field, fieldState }) {
+    return (
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>{placeholder}</Text>
+        <TextInput
+          style={[styles.input, !!fieldState.error && styles.inputError]}
+          secureTextEntry
+          placeholder="********"
+          placeholderTextColor={colors.muted}
+          {...field}
+        />
+        {!!fieldState.error && <Text style={styles.error}>{fieldState.error.message}</Text>}
+      </View>
+    );
+  };
+
   return (
-    <Modal visible={visible} transparent={true} animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -38,48 +69,31 @@ export default function ChangePasswordModal({ visible, onClose, onSubmit }) {
           </View>
 
           <View style={styles.modalBody}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Contraseña Actual *</Text>
-              <TextInput 
-                style={styles.input} 
-                secureTextEntry 
-                placeholder="********" 
-                placeholderTextColor={colors.muted}
-                value={form.password_actual}
-                onChangeText={(v) => handleChange('password_actual', v)}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nueva Contraseña *</Text>
-              <TextInput 
-                style={styles.input} 
-                secureTextEntry 
-                placeholder="********" 
-                placeholderTextColor={colors.muted}
-                value={form.password_nueva}
-                onChangeText={(v) => handleChange('password_nueva', v)}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Repetir Nueva Contraseña *</Text>
-              <TextInput 
-                style={styles.input} 
-                secureTextEntry 
-                placeholder="********" 
-                placeholderTextColor={colors.muted}
-                value={form.password_repetir}
-                onChangeText={(v) => handleChange('password_repetir', v)}
-              />
-            </View>
+            <Controller
+              name="password_actual"
+              control={control}
+              rules={RULES.password_actual}
+              render={renderInput('Contraseña Actual *')}
+            />
+            <Controller
+              name="password_nueva"
+              control={control}
+              rules={RULES.password_nueva}
+              render={renderInput('Nueva Contraseña *')}
+            />
+            <Controller
+              name="password_repetir"
+              control={control}
+              rules={RULES.password_repetir}
+              render={renderInput('Repetir Nueva Contraseña *')}
+            />
           </View>
 
           <View style={styles.modalFooter}>
             <TouchableOpacity style={styles.btnCancel} onPress={onClose}>
               <Text style={styles.btnCancelText}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btnSubmit} onPress={handleSave}>
+            <TouchableOpacity style={styles.btnSubmit} onPress={handleSubmit(handleSave)}>
               <Text style={styles.btnSubmitText}>Actualizar Contraseña</Text>
             </TouchableOpacity>
           </View>
@@ -99,6 +113,8 @@ const styles = StyleSheet.create({
   inputGroup: { gap: 4 },
   label: { fontSize: 12, color: colors.muted, fontWeight: '600' },
   input: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: colors.border, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: 14 },
+  inputError: { borderColor: '#f87171' },
+  error: { color: '#f87171', fontSize: 11, marginTop: 3 },
   modalFooter: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 20, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
   btnCancel: { backgroundColor: '#334155', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 6 },
   btnCancelText: { color: colors.text, fontWeight: 'bold', fontSize: 13 },

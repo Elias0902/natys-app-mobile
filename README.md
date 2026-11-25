@@ -12,6 +12,12 @@ npx expo start --web    # browser
 
 On Windows you can also double-click `iniciar.bat` (or `iniciar-web.bat`).
 
+## Stack implemented
+
+- **React Navigation:** `App.js` mounts `NavigationContainer`; `src/navigation/AppNavigator.js` keeps a root stack (`Login` / `Main`) and a nested native stack whose route names are the same keys used by `src/navigation/menu.js` (`ecommerce`, `carrito`, `perfil`, ...). The existing custom `Header`, `Sidebar`, `Drawer` and `UserMenu` are kept and now call `navigation.navigate(...)`.
+- **Redux Toolkit + React Redux:** `src/store/` holds `auth` (session, permissions, login notice, last access) and `cart` (items, count, total, checkout thunk). Ecommerce, Productos, Cart, Header and the app shell read/write this store instead of local props.
+- **React Hook Form:** used in login/signup/reset, checkout, generic module CRUD (`RecordFormModal`) and profile password/avatar modals. Validation messages still come from `src/utils/validation.js` and the backend rules.
+
 ## Backend
 
 `src/utils/config.js`:
@@ -28,12 +34,13 @@ assets/            images
 src/api/           exchange rates
 src/components/    shared components (Header, Sidebar, Drawer, Page, Icon, SearchBar...)
 src/features/      one folder per feature, each with components/, screens/ and services/
+src/store/         Redux Toolkit store: auth (session/permissions) and cart (items/checkout)
   auth/            login, sign up, password recovery
   ecommerce/       catalog, cart and orders
   miperfil/        user profile
   modulos/         generic list and CRUD for the modules of the menu (forms in fields.js)
 src/screens/       global pages (Info, NotFound)
-src/navigation/    AppNavigator (session, cart, current screen) and the menu
+src/navigation/    AppNavigator (React Navigation stacks + app shell), routes and menu
 src/utils/         config, http, theme, layout, format, mock data
 php/               endpoints to add to natys-larence
 ```

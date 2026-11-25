@@ -25,7 +25,7 @@ export async function restoreSession() {
   try {
     const data = await request('autenticator&action=sesionApi', { method: 'GET' });
     return data.status ? data.usuario || data.user : null;
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }
@@ -34,7 +34,7 @@ export async function restoreSession() {
 export async function logout() {
   try {
     await request('autenticator&action=logoutApi', { method: 'POST' });
-  } catch (e) {
+  } catch (_e) {
     // Aunque falle la petición al servidor, nos aseguramos de limpiar localmente
   } finally {
     await removeToken();

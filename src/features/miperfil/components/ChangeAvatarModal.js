@@ -1,26 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { Controller, useForm } from 'react-hook-form';
 import { colors } from '../../../utils/theme';
-import { firstError, isBlank } from '../../../utils/validation';
+import { isBlank } from '../../../utils/validation';
+
+const DEFAULT_VALUES = { imageUrl: '' };
+
+const RULES = {
+  imageUrl: {
+    required: 'Por favor ingresa una ruta o URL válida para la imagen.',
+    validate: (value) => {
+      const v = String(value ?? '').trim();
+      if (isBlank(v)) return true; // required muestra el mensaje principal.
+      const esImagen =
+        /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(v) ||
+        /^(https?:\/\/|\.?\/?[\w-]+\/)*[\w-]+\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(v);
+      return esImagen || 'La imagen debe ser JPG, PNG, GIF o WEBP (URL, ruta o base64).';
+    },
+  },
+};
 
 export default function ChangeAvatarModal({ visible, onClose, onSubmit }) {
-  const [imageUrl, setImageUrl] = useState('');
+  const { control, handleSubmit, reset } = useForm({
+    defaultValues: DEFAULT_VALUES,
+    mode: 'onSubmit',
+  });
 
-  const handleSave = () => {
-    const value = imageUrl.trim();
-    const esImagen = /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(value)
-      || /^(https?:\/\/|\.?\/?[\w-]+\/)*[\w-]+\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(value);
-    const error = firstError([
-      [isBlank(value), 'Por favor ingresa una ruta o URL válida para la imagen.'],
-      [!isBlank(value) && !esImagen, 'La imagen debe ser JPG, PNG, GIF o WEBP (URL, ruta o base64).'],
-    ]);
-    if (error) { alert(error); return; }
-    onSubmit(value);
+  useEffect(() => {
+    if (visible) reset(DEFAULT_VALUES);
+  }, [visible, reset]);
+
+  const handleSave = (values) => {
+    onSubmit(values.imageUrl.trim());
     onClose();
   };
 
   return (
-    <Modal visible={visible} transparent={true} animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -33,12 +49,21 @@ export default function ChangeAvatarModal({ visible, onClose, onSubmit }) {
           <View style={styles.modalBody}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Ruta o URL de la Imagen *</Text>
-              <TextInput 
-                style={styles.input} 
-                placeholder="Assets/img/perfiles/mi_foto.jpg" 
-                placeholderTextColor={colors.muted}
-                value={imageUrl}
-                onChangeText={setImageUrl}
+              <Controller
+                name="imageUrl"
+                control={control}
+                rules={RULES.imageUrl}
+                render={({ field, fieldState }) => (
+                  <>
+                    <TextInput
+                      style={[styles.input, !!fieldState.error && styles.inputError]}
+                      placeholder="Assets/img/perfiles/mi_foto.jpg"
+                      placeholderTextColor={colors.muted}
+                      {...field}
+                    />
+                    {!!fieldState.error && <Text style={styles.error}>{fieldState.error.message}</Text>}
+                  </>
+                )}
               />
               <Text style={styles.hint}>Ingresa la ruta relativa o enlace de la nueva imagen de avatar.</Text>
             </View>
@@ -48,7 +73,7 @@ export default function ChangeAvatarModal({ visible, onClose, onSubmit }) {
             <TouchableOpacity style={styles.btnCancel} onPress={onClose}>
               <Text style={styles.btnCancelText}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btnSubmit} onPress={handleSave}>
+            <TouchableOpacity style={styles.btnSubmit} onPress={handleSubmit(handleSave)}>
               <Text style={styles.btnSubmitText}>Guardar Imagen</Text>
             </TouchableOpacity>
           </View>
@@ -68,6 +93,8 @@ const styles = StyleSheet.create({
   inputGroup: { gap: 4 },
   label: { fontSize: 12, color: colors.muted, fontWeight: '600' },
   input: { backgroundColor: '#0f172a', borderWidth: 1, borderColor: colors.border, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: 14 },
+  inputError: { borderColor: '#f87171' },
+  error: { color: '#f87171', fontSize: 11, marginTop: 3 },
   hint: { fontSize: 11, color: colors.muted, marginTop: 4 },
   modalFooter: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 20, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
   btnCancel: { backgroundColor: '#334155', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 6 },

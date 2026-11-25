@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MENU, menuFor } from '../navigation/menu';
 import { colors } from '../utils/theme';
@@ -8,13 +8,10 @@ const groupOf = (key) => MENU.find((m) => m.children?.some((c) => c.key === key)
 
 // Menu items, shared by the phone drawer and the desktop sidebar
 export default function MenuList({ user, current, onSelect, onLogout }) {
-  const [open, setOpen] = useState(() => ({ [groupOf(current)]: true }));
+  const [open, setOpen] = useState({});
 
-  // Keep the group of the current screen open
-  useEffect(() => {
-    const g = groupOf(current);
-    if (g) setOpen((p) => (p[g] ? p : { ...p, [g]: true }));
-  }, [current]);
+  // The group containing the active screen stays open without mutating state in an effect.
+  const currentGroup = groupOf(current);
 
   return (
     <View style={s.list}>
@@ -29,8 +26,8 @@ export default function MenuList({ user, current, onSelect, onLogout }) {
           );
         }
 
-        const isOpen = !!open[m.label];
-        const hasCurrent = m.children.some((c) => c.key === current);
+        const isOpen = !!open[m.label] || currentGroup === m.label;
+        const hasCurrent = m.children.some((c) => c?.key === current);
         return (
           <View key={m.label}>
             <TouchableOpacity style={s.row} onPress={() => setOpen((p) => ({ ...p, [m.label]: !p[m.label] }))}>
@@ -39,7 +36,7 @@ export default function MenuList({ user, current, onSelect, onLogout }) {
               <Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={15} color={colors.muted} />
             </TouchableOpacity>
             {isOpen &&
-              m.children.map((c) => {
+              m.children.filter(Boolean).map((c) => {
                 const active = current === c.key;
                 return (
                   <TouchableOpacity key={c.key} style={[s.sub, active && s.rowActive]} onPress={() => onSelect(c)}>

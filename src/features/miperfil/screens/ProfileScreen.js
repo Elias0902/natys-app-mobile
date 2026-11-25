@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import { useSelector } from 'react-redux';
 import { colors } from '../../../utils/theme';
 import { initials } from '../../../utils/format';
 import { useLayout } from '../../../utils/layout';
@@ -8,6 +9,7 @@ import { BASE_URL } from '../../../utils/config';
 import { getPerfil } from '../services/ProfileServices';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ChangeAvatarModal from '../components/ChangeAvatarModal';
+import { selectLastAccess, selectUser } from '../../../store/authSlice';
 
 const TABS = [
   { key: 'perfil', label: 'Mi Perfil' },
@@ -25,9 +27,12 @@ function Row({ label, value }) {
   );
 }
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ route }) {
   const { isPhone, contentWidth } = useLayout();
-  const [tab, setTab] = useState('perfil');
+  const user = useSelector(selectUser);
+  const lastAccess = useSelector(selectLastAccess);
+  const initialTab = route?.params?.tab || 'perfil';
+  const [tab, setTab] = useState(initialTab);
   const [perfilData, setPerfilData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,6 +43,12 @@ export default function ProfileScreen() {
 
   const twoColumns = !isPhone && contentWidth >= 700;
   const serverRoot = BASE_URL.replace('/api', '');
+
+  // El menú de usuario navega con params: navigation.navigate('perfil', { tab }).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTab(route?.params?.tab || 'perfil');
+  }, [route?.params?.tab]);
 
   useEffect(() => {
     getPerfil()
@@ -50,7 +61,7 @@ export default function ProfileScreen() {
   const ultimoAcceso = perfilData?.ultimo_acceso;
   const creditoInfo = perfilData?.credito_info;
 
-  const avatarUrl = usuario.avatar ? `${serverRoot}/${usuario.avatar}` : null;
+  const avatarUrl = usuario?.avatar ? `${serverRoot}/${usuario.avatar}` : null;
 
   if (loading) {
     return (
@@ -81,12 +92,12 @@ export default function ProfileScreen() {
             {avatarUrl ? (
               <Image source={{ uri: avatarUrl }} style={s.avatarImg} resizeMode="cover" />
             ) : (
-              <Text style={s.avatarText}>{initials(usuario?.nombre_usuario)}</Text>
+              <Text style={s.avatarText}>{initials(usuario?.nombre_usuario || user?.nombre_usuario)}</Text>
             )}
           </TouchableOpacity>
-          <Text style={s.name} numberOfLines={1}>{usuario?.nombre_usuario}</Text>
-          <Text style={s.mail} numberOfLines={1}>{usuario?.email_usuario}</Text>
-          <Text style={s.role}>{usuario?.nombre_rol}</Text>
+          <Text style={s.name} numberOfLines={1}>{usuario?.nombre_usuario || user?.nombre_usuario}</Text>
+          <Text style={s.mail} numberOfLines={1}>{usuario?.email_usuario || user?.email_usuario}</Text>
+          <Text style={s.role}>{usuario?.nombre_rol || user?.rol_usuario}</Text>
 
           {/* Botones de configuración rápida */}
           <View style={s.actionButtonsContainer}>
@@ -117,7 +128,7 @@ export default function ProfileScreen() {
                 <Row label="Nombre de Usuario" value={usuario?.nombre_usuario} />
                 <Row label="Correo Electrónico" value={usuario?.email_usuario} />
                 <Row label="Rol en el Sistema" value={usuario?.nombre_rol} />
-                <Row label="Último Acceso" value={ultimoAcceso} />
+                <Row label="Último Acceso" value={ultimoAcceso || lastAccess} />
               </>
             )}
 
